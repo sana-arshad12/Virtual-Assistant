@@ -1,7 +1,13 @@
-import React, { useState } from 'react'
+import React, { useState, useContext } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { userDataContext } from '../context/UserContext.jsx'
 import bg from '../assets/authBg.png'
 
 function SignUp() {
+  const navigate = useNavigate()
+  const { value } = useContext(userDataContext)
+  const { setUserData } = value || {}
+  
   const [showPassword, setShowPassword] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
@@ -84,9 +90,19 @@ function SignUp() {
       
       if (response.ok) {
         console.log('✅ Registration successful:', data)
-        alert('Registration successful!')
-        // Clear form
-        setFormData({ name: '', email: '', password: '' })
+        
+        // Save token to localStorage
+        if (data.token) {
+          localStorage.setItem('token', data.token)
+        }
+        
+        // Update user data in context
+        if (setUserData && data.user) {
+          setUserData(data.user)
+        }
+        
+        // Navigate to customization page for new users
+        navigate('/customization')
       } else {
         console.log('❌ Registration failed:', data.message)
         setErrors({ general: data.message || 'Registration failed' })

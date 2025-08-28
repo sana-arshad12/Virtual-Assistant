@@ -1,7 +1,13 @@
-import React, { useState } from 'react'
+import React, { useState, useContext } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { userDataContext } from '../context/UserContext.jsx'
 import bg from '../assets/authBg.png'
 
 function SignIn() {
+  const navigate = useNavigate()
+  const { value } = useContext(userDataContext)
+  const { setUserData } = value || {}
+  
   const [showPassword, setShowPassword] = useState(false)
   const [formData, setFormData] = useState({
     email: '',
@@ -75,8 +81,23 @@ function SignIn() {
       
       if (response.ok) {
         console.log('✅ Login successful:', data)
-        // TODO: Handle successful login (save token, redirect, etc.)
-        alert('Login successful!')
+        
+        // Save token to localStorage
+        if (data.token) {
+          localStorage.setItem('token', data.token)
+        }
+        
+        // Update user data in context
+        if (setUserData && data.user) {
+          setUserData(data.user)
+        }
+        
+        // Navigate to home/customization based on user data
+        if (data.user?.assistantImage && data.user?.assistantName) {
+          navigate('/')
+        } else {
+          navigate('/customization')
+        }
       } else {
         console.log('❌ Login failed:', data.message)
         setErrors({ general: data.message || 'Login failed' })
