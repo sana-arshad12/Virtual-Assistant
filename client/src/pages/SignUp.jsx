@@ -3,65 +3,180 @@ import bg from '../assets/authBg.png'
 
 function SignUp() {
   const [showPassword, setShowPassword] = useState(false)
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: ''
+  })
+  const [errors, setErrors] = useState({})
+  const [loading, setLoading] = useState(false)
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword)
   }
 
-  const handleSubmit = (e) => {
+  const handleChange = (e) => {
+    const { name, value } = e.target
+    setFormData(prevState => ({
+      ...prevState,
+      [name]: value
+    }))
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }))
+    }
+  }
+
+  const validateForm = () => {
+    const newErrors = {}
+
+    // Name validation
+    if (!formData.name) {
+      newErrors.name = 'Name is required'
+    } else if (formData.name.length < 2) {
+      newErrors.name = 'Name must be at least 2 characters long'
+    }
+
+    // Email validation
+    if (!formData.email) {
+      newErrors.email = 'Email is required'
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = 'Please enter a valid email address'
+    }
+
+    // Password validation
+    if (!formData.password) {
+      newErrors.password = 'Password is required'
+    } else if (formData.password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters long'
+    }
+
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
+
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    // Add signup logic here
-    console.log('Sign up form submitted')
+    
+    if (!validateForm()) {
+      console.log('❌ Form validation failed:', errors)
+      return
+    }
+
+    setLoading(true)
+    console.log('=== SIGNUP FORM DATA ===')
+    console.log('Name:', formData.name)
+    console.log('Email:', formData.email)
+    console.log('Password:', formData.password)
+    console.log('✅ Form validation passed!')
+
+    try {
+      // API call to your backend - Fixed URL to match your server port
+      const response = await fetch('http://localhost:8000/api/auth/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+      })
+
+      const data = await response.json()
+      
+      if (response.ok) {
+        console.log('✅ Registration successful:', data)
+        alert('Registration successful!')
+        // Clear form
+        setFormData({ name: '', email: '', password: '' })
+      } else {
+        console.log('❌ Registration failed:', data.message)
+        setErrors({ general: data.message || 'Registration failed' })
+      }
+    } catch (error) {
+      console.error('❌ Network error:', error)
+      setErrors({ general: 'Network error. Please try again.' })
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
     <div className='w-full h-[100vh] bg-cover flex justify-center items-center' style={{backgroundImage:`url(${bg})`}}>
-      <form onSubmit={handleSubmit} className='w-[90%] h-[600px] max-w-[500px] bg-[#00000083] backdrop-blur shadow-lg shadow-black flex flex-col items-center justify-center gap-[20px] px-[20px]' >
+      <form onSubmit={handleSubmit} className='w-[90%] h-[600px] max-w-[500px] bg-[#00000083] backdrop-blur shadow-lg shadow-black flex flex-col items-center justify-center gap-[20px] px-[20px]'>
         <h1 className='text-white text-[30px] font-semibold mb-[30px]'>Register to <span className='text-blue-400'>Virtual Assistant</span></h1>
 
-        <input 
-          type="text" 
-          placeholder='Enter your name' 
-          className='w-full h-[60px] outline-none border-2 border-white bg-transparent text-white placeholder-gray-300 px-[20px] py-[10px] rounded-full text-[18px]' 
-        />
+        {/* General Error Message */}
+        {errors.general && (
+          <div className='w-full bg-red-500 text-white px-4 py-2 rounded-lg text-sm'>
+            {errors.general}
+          </div>
+        )}
 
-        <input 
-          type="email" 
-          placeholder='Enter your email' 
-          className='w-full h-[60px] outline-none border-2 border-white bg-transparent text-white placeholder-gray-300 px-[20px] py-[10px] rounded-full text-[18px]' 
-        />
-
-        <div className='relative w-full h-[60px]'>
+        <div className='w-full'>
           <input 
-            type={showPassword ? "text" : "password"} 
-            placeholder='Enter your password' 
-            className='w-full h-[60px] outline-none border-2 border-white bg-transparent text-white placeholder-gray-300 px-[20px] py-[10px] rounded-full text-[18px] pr-[60px]' 
+            type="text" 
+            name="name"
+            placeholder='Enter your name' 
+            value={formData.name}
+            onChange={handleChange}
+            className={`w-full h-[60px] outline-none border-2 ${errors.name ? 'border-red-500' : 'border-white'} bg-transparent text-white placeholder-gray-300 px-[20px] py-[10px] rounded-full text-[18px]`}
           />
-          <button 
-            type="button"
-            onClick={togglePasswordVisibility}
-            className='absolute right-[20px] top-1/2 transform -translate-y-1/2 text-white hover:text-gray-300 transition-colors'
-          >
-            {showPassword ? (
-              // Eye slash icon (hide password)
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"></path>
-              </svg>
-            ) : (
-              // Eye icon (show password)
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-              </svg>
-            )}
-          </button>
+          {errors.name && (
+            <p className='text-red-400 text-sm mt-2 ml-4'>{errors.name}</p>
+          )}
+        </div>
+
+        <div className='w-full'>
+          <input 
+            type="email" 
+            name="email"
+            placeholder='Enter your email' 
+            value={formData.email}
+            onChange={handleChange}
+            className={`w-full h-[60px] outline-none border-2 ${errors.email ? 'border-red-500' : 'border-white'} bg-transparent text-white placeholder-gray-300 px-[20px] py-[10px] rounded-full text-[18px]`}
+          />
+          {errors.email && (
+            <p className='text-red-400 text-sm mt-2 ml-4'>{errors.email}</p>
+          )}
+        </div>
+
+        <div className='w-full'>
+          <div className='relative h-[60px]'>
+            <input 
+              type={showPassword ? "text" : "password"} 
+              name="password"
+              placeholder='Enter your password' 
+              value={formData.password}
+              onChange={handleChange}
+              className={`w-full h-[60px] outline-none border-2 ${errors.password ? 'border-red-500' : 'border-white'} bg-transparent text-white placeholder-gray-300 px-[20px] py-[10px] rounded-full text-[18px] pr-[60px]`}
+            />
+            <button 
+              type="button"
+              onClick={togglePasswordVisibility}
+              className='absolute right-[20px] top-1/2 transform -translate-y-1/2 text-white hover:text-gray-300 transition-colors'
+            >
+              {showPassword ? (
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"></path>
+                </svg>
+              ) : (
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                </svg>
+              )}
+            </button>
+          </div>
+          {errors.password && (
+            <p className='text-red-400 text-sm mt-2 ml-4'>{errors.password}</p>
+          )}
         </div>
 
         <button 
           type="submit"
-         className='w-full h-[60px] bg-sky-400 hover:bg-sky-500 text-white font-semibold rounded-full text-[18px] transition-colors duration-300 mt-[10px]'
+          disabled={loading}
+          className='w-full h-[60px] bg-sky-400 hover:bg-sky-500 disabled:bg-gray-400 text-white font-semibold rounded-full text-[18px] transition-colors duration-300 mt-[10px]'
         >
-          Sign Up
+          {loading ? 'Signing Up...' : 'Sign Up'}
         </button>
 
         <p className='text-gray-300 text-[16px] mt-[10px]'>

@@ -1,5 +1,6 @@
 import express from "express";
 import dotenv from "dotenv";
+import cors from "cors";
 import connectDB from "./config/db.js";
 import authRouter from "./routes/auth.routes.js";
 import cookieParser from "cookie-parser";
@@ -7,20 +8,27 @@ import cookieParser from "cookie-parser";
 dotenv.config();
 
 const app = express();
-app.use(express.json());
 
-// Health route defined once
+// CORS configuration - Add this BEFORE other middlewares
+app.use(cors({
+  origin: "http://localhost:5173", // Your frontend URL
+  credentials: true,
+  optionsSuccessStatus: 200
+}));
+
+app.use(express.json());
+app.use(cookieParser());
+
+// Health route
 app.get("/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
-const basePort = parseInt(process.env.PORT, 10) || 5000;
-app.use(express.json());
-app.use(cookieParser());
-
 app.use("/api/auth", authRouter);
 
 // Start server with automatic fallback if port is busy
+const basePort = parseInt(process.env.PORT, 10) || 5000;
+
 const startServer = (portToTry, attempt = 1, maxAttempts = 10) => {
   const server = app.listen(portToTry, () => {
     if (attempt > 1) {

@@ -1,68 +1,152 @@
-import User from "../models/user.model.js";
-import { generateToken } from "../utils/token.js";
-import bcrypt from "bcryptjs";
+import bcrypt from 'bcryptjs'
+import jwt from 'jsonwebtoken'
+import User from '../models/user.model.js'
 
-// it is for signup
+// Register User (signUp)
 export const signUp = async (req, res) => {
-  
   try {
-    const { name, email, password } = req.body;
-    const existEmail = await User.findOne({ email });
-    if (existEmail) {
-      return res.status(400).json({ message: "Email already exists" });
+    const { name, email, password } = req.body
+
+    // Validation
+    if (!name || !email || !password) {
+      return res.status(400).json({ 
+        message: 'All fields are required' 
+      })
     }
+
     if (password.length < 6) {
-      return res.status(400).json({ message: "Password must be at least 6 characters long" });
+      return res.status(400).json({ 
+        message: 'Password must be at least 6 characters long' 
+      })
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ 
+        message: 'Please enter a valid email address' 
+      })
+    }
 
-    const user = await User.create({ name, email, password: hashedPassword });
-    const token = await generateToken(user._id);
+    // Check if user already exists
+    const existingUser = await User.findOne({ email })
+    if (existingUser) {
+      return res.status(400).json({ 
+        message: 'User with this email already exists' 
+      })
+    }
 
-    res.cookie("token", token, { httpOnly: true , maxAge:7*24*60*60*1000,sameSite: 'Strict',secure:false});
+    // Hash password
+    const saltRounds = 12
+    const hashedPassword = await bcrypt.hash(password, saltRounds)
 
-    await user.save();
-   return res.status(201).json({ message: "User created successfully", user, token });
+    console.log('=== REGISTRATION DATA ===')
+    console.log('Original Password:', password)
+    console.log('Hashed Password:', hashedPassword)
+    console.log('Salt Rounds:', saltRounds)
+
+    // Create user
+    const user = new User({
+      name,
+      email,
+      password: hashedPassword
+    })
+
+    await user.save()
+
+    // Generate JWT token directly (no separate utility file needed)
+    const token = jwt.sign(
+      { userId: user._id }, 
+      process.env.JWT_SECRET || 'your-secret-key', 
+      { expiresIn: '7d' }
+    )
+
+    console.log('✅ User registered successfully:', {
+      id: user._id,
+      name: user.name,
+      email: user.email
+    })
+
+    res.status(201).json({
+      message: 'User registered successfully',
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email
+      },
+      token
+    })
+
   } catch (error) {
-   return res.status(500).json({ message: "Error creating user", error });
+    console.error('❌ Registration error:', error)
+    res.status(500).json({ 
+      message: 'Server error during registration' 
+    })
   }
-};
+}
 
-
-// it is for login 
-
+// Login User
 export const login = async (req, res) => {
-  
   try {
-    const {  email, password } = req.body;
-    const user = await User.findOne({ email });
+    const { email, password } = req.body
+
+    // Validation
+    if (!email || !password) {
+      return res.status(400).json({ 
+        message: 'Email and password are required' 
+      })
+    }
+
+    // Find user
+    const user = await User.findOne({ email })
     if (!user) {
-      return res.status(400).json({ message: "Email does not exist" });
+      return res.status(400).json({ 
+        message: 'Invalid email or password' 
+      })
     }
-  
 
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    // Compare password
+    const isPasswordValid = await bcrypt.compare(password, user.password)
+
+    console.log('=== LOGIN ATTEMPT ===')
+    console.log('Email:', email)
+    console.log('Password provided:', password)
+    console.log('Stored hash:', user.password)
+    console.log('Password match:', isPasswordValid)
+
     if (!isPasswordValid) {
-      return res.status(400).json({ message: "Invalid password" });
+      return res.status(400).json({ 
+        message: 'Invalid email or password' 
+      })
     }
 
-    const token = await generateToken(user._id);
+    // Generate JWT token directly
+    const token = jwt.sign(
+      { userId: user._id }, 
+      process.env.JWT_SECRET || 'your-secret-key', 
+      { expiresIn: '7d' }
+    )
 
-    res.cookie("token", token, { httpOnly: true , maxAge:7*24*60*60*1000,sameSite: 'Strict',secure:false});
+    console.log('✅ User logged in successfully:', {
+      id: user._id,
+      name: user.name,
+      email: user.email
+    })
 
-    await user.save();
-   return res.status(200).json({ message: "User logged in successfully", user, token });
+    res.status(200).json({
+      message: 'Login successful',
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email
+      },
+      token
+    })
+
   } catch (error) {
-   return res.status(500).json({ message: "Error logging in user", error });
+    console.error('❌ Login error:', error)
+    res.status(500).json({ 
+      message: 'Server error during login' 
+    })
   }
-};
-
-export const logout = async (req, res) => {
-  try {
-    res.clearCookie("token");
-    return res.status(200).json({ message: "User logged out successfully" });
-  } catch (error) {
-    return res.status(500).json({ message: "Error logging out user", error });
-  }
-};
+}
