@@ -4,6 +4,7 @@ import cors from "cors";
 import connectDB from "./config/db.js";
 import authRouter from "./routes/auth.routes.js";
 import userRouter from "./routes/user.routes.js";
+import aiRouter from "./routes/ai.routes.js";
 import cookieParser from "cookie-parser";
 
 dotenv.config();
@@ -12,7 +13,7 @@ const app = express();
 
 // CORS configuration - Add this BEFORE other middlewares
 app.use(cors({
-  origin: "http://localhost:5173", // Your frontend URL
+  origin: ["http://localhost:5173", "http://localhost:5174", "http://localhost:5175"], // Allow multiple frontend ports
   credentials: true,
   optionsSuccessStatus: 200
 }));
@@ -25,11 +26,13 @@ app.get("/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
+// Routes
 app.use("/api/auth", authRouter);
 app.use("/api/user", userRouter);
+app.use("/api/ai", aiRouter);
 
 // Start server with automatic fallback if port is busy
-const basePort = parseInt(process.env.PORT, 10) || 5000;
+const basePort = parseInt(process.env.PORT, 10) || 8000;
 
 const startServer = (portToTry, attempt = 1, maxAttempts = 10) => {
   const server = app.listen(portToTry, () => {

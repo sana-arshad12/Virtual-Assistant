@@ -6,7 +6,7 @@ import bg from '../assets/authBg.png'
 function SignUp() {
   const navigate = useNavigate()
   const { value } = useContext(userDataContext)
-  const { setUserData } = value || {}
+  const { setUserData, serverUrl } = value || {}
   
   const [showPassword, setShowPassword] = useState(false)
   const [formData, setFormData] = useState({
@@ -77,8 +77,8 @@ function SignUp() {
     console.log('✅ Form validation passed!')
 
     try {
-      // API call to your backend - Fixed URL to match your server port
-      const response = await fetch('http://localhost:8000/api/auth/signup', {
+      // API call to your backend - Using dynamic server URL from context
+      const response = await fetch(`${serverUrl}/api/auth/signup`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

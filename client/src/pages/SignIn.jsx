@@ -6,7 +6,7 @@ import bg from '../assets/authBg.png'
 function SignIn() {
   const navigate = useNavigate()
   const { value } = useContext(userDataContext)
-  const { setUserData } = value || {}
+  const { setUserData, serverUrl } = value || {}
   
   const [showPassword, setShowPassword] = useState(false)
   const [formData, setFormData] = useState({
@@ -68,8 +68,8 @@ function SignIn() {
     console.log('✅ Form validation passed!')
 
     try {
-      // Fix: Change port from 8001 to 8000 and endpoint from /login to /signin
-      const response = await fetch('http://localhost:8000/api/auth/signin', {
+      // Use serverUrl from context instead of hardcoded URL
+      const response = await fetch(`${serverUrl}/api/auth/signin`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
