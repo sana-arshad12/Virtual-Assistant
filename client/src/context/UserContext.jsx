@@ -4,6 +4,7 @@ export const userDataContext = createContext()
 function UserContext({ children }) {
     const serverUrl = "http://localhost:8000"
     const [userData, setUserData] = React.useState(null)
+    const [selectedImage, setSelectedImage] = React.useState(null)
 
     const handleCurrentUser = async () => {
         try {
@@ -42,7 +43,7 @@ function UserContext({ children }) {
         handleCurrentUser()
     }, [])
 
-    const value = { serverUrl, userData, setUserData, handleCurrentUser }
+    const value = { serverUrl, userData, setUserData, handleCurrentUser, selectedImage, setSelectedImage }
 
     return (
         <userDataContext.Provider value={{ value }}>

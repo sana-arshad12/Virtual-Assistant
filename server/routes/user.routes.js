@@ -1,5 +1,6 @@
 import express from 'express'
 import { isAuth, optionalAuth } from '../middlewares/isAuth.js'
+import upload from '../middlewares/multer.js'
 import {
   getUserProfile,
   updateUserProfile,
@@ -17,8 +18,8 @@ const router = express.Router()
 // Get current user profile (protected route)
 router.get('/profile', isAuth, getUserProfile)
 
-// Update user profile (protected route)
-router.put('/profile', isAuth, updateUserProfile)
+// Update user profile with optional file upload (protected route)
+router.put('/profile', isAuth, upload.single('assistantImage'), updateUserProfile)
 
 // Change password (protected route)
 router.put('/change-password', isAuth, changePassword)

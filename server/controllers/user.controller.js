@@ -1,6 +1,8 @@
 import User from '../models/user.model.js'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
+import uploadOnCloudinary from '../config/cloudinary.js'
+import fs from 'fs'
 
 // Get current user profile
 export const getUserProfile = async (req, res) => {
@@ -46,28 +48,57 @@ export const getUserProfile = async (req, res) => {
   }
 }
 
-// Update user profile
+// Update user profile with assistant data
 export const updateUserProfile = async (req, res) => {
   try {
     const userId = req.userId // From JWT middleware
-    const { name, assistantName, assistantImage } = req.body
+    const { name, assistantName, assistantImage, isPreUploadedImage } = req.body
 
     console.log('📝 Updating profile for user ID:', userId)
-    console.log('Update data:', { name, assistantName, assistantImage })
+    console.log('Update data:', { name, assistantName, assistantImage: assistantImage ? 'provided' : 'none', isPreUploadedImage })
 
     // Validation
-    if (!name && !assistantName && !assistantImage) {
+    if (!name && !assistantName && !assistantImage && !req.file) {
       return res.status(400).json({
         success: false,
         message: 'At least one field is required to update'
       })
     }
 
-    // Prepare update object (only include provided fields)
+    // Prepare update object
     const updateData = {}
     if (name) updateData.name = name.trim()
     if (assistantName) updateData.assistantName = assistantName.trim()
-    if (assistantImage) updateData.assistantImage = assistantImage
+
+    // Handle assistant image
+    let finalImageUrl = null
+
+    if (req.file) {
+      // New image uploaded from device - upload to Cloudinary
+      console.log('🌐 Uploading new image to Cloudinary:', req.file.filename)
+      try {
+        finalImageUrl = await uploadOnCloudinary(req.file.path)
+        console.log('✅ Image uploaded to Cloudinary:', finalImageUrl)
+      } catch (error) {
+        console.error('❌ Cloudinary upload failed:', error)
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to upload image to cloud storage'
+        })
+      }
+    } else if (assistantImage && isPreUploadedImage === 'true') {
+      // Pre-uploaded image selected - use the path directly
+      console.log('📁 Using pre-uploaded image path:', assistantImage)
+      finalImageUrl = assistantImage
+    } else if (assistantImage && isPreUploadedImage === 'false') {
+      // Base64 image data - this shouldn't happen with file upload, but handle it
+      console.log('🔍 Received base64 image data')
+      finalImageUrl = assistantImage
+    }
+
+    if (finalImageUrl) {
+      updateData.assistantImage = finalImageUrl
+    }
 
     // Find and update user
     const updatedUser = await User.findByIdAndUpdate(
@@ -103,6 +134,11 @@ export const updateUserProfile = async (req, res) => {
 
   } catch (error) {
     console.error('❌ Error updating user profile:', error)
+    
+    // Clean up uploaded file if there's an error
+    if (req.file && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path)
+    }
     
     // Handle validation errors
     if (error.name === 'ValidationError') {
