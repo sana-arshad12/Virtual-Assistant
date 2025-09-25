@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Command Test</title>
+</head>
+<body style="background: #1a1a2e; color: white; padding: 20px; font-family: Arial;">
+    <h1>Virtual Assistant Command Test</h1>
+    
+    <button onclick="testNewTab()" style="padding: 10px; margin: 10px; background: #0066ff; color: white; border: none; border-radius: 5px;">
+        Test: Open New Tab
+    </button>
+    
+    <button onclick="testFileManager()" style="padding: 10px; margin: 10px; background: #ff6600; color: white; border: none; border-radius: 5px;">
+        Test: File Manager (Enhanced)
+    </button>
+    
+    <button onclick="testCalculator()" style="padding: 10px; margin: 10px; background: #00aa00; color: white; border: none; border-radius: 5px;">
+        Test: Open Calculator
+    </button>
+    
+    <button onclick="testSearch()" style="padding: 10px; margin: 10px; background: #aa0066; color: white; border: none; border-radius: 5px;">
+        Test: Search Weather Pakistan Lahore
+    </button>
+    
+    <button onclick="testSystemCommand()" style="padding: 10px; margin: 10px; background: #9c27b0; color: white; border: none; border-radius: 5px;">
+        Test: System Command (Notepad)
+    </button>
+    
+    <button onclick="testTerminal()" style="padding: 10px; margin: 10px; background: #607d8b; color: white; border: none; border-radius: 5px;">
+        Test: Open Terminal/CMD
+    </button>
+    
+    <div id="results" style="margin-top: 20px; padding: 10px; background: #2a2a3e; border-radius: 5px;">
+        <h3>Test Results:</h3>
+        <div id="output">Click buttons to test commands...</div>
+    </div>
+
+    <script>
+        function log(message) {
+            document.getElementById('output').innerHTML += '<br>' + message;
+        }
+
+        function testNewTab() {
+            try {
+                const newWindow = window.open('https://www.google.com', '_blank');
+                if (newWindow) {
+                    log('✅ New tab opened successfully');
+                } else {
+                    log('❌ New tab blocked - check popup settings');
+                }
+            } catch (error) {
+                log('❌ Error opening tab: ' + error.message);
+            }
+        }
+
+        function testFileManager() {
+            try {
+                log('🔧 Testing enhanced file manager functionality...');
+                
+                // Method 1: File picker for folder selection
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.webkitdirectory = true;
+                input.multiple = true;
+                input.style.display = 'none';
+                
+                input.onchange = (e) => {
+                    const files = e.target.files;
+                    log(`✅ File manager accessed - ${files.length} files/folders detected`);
+                    document.body.removeChild(input);
+                };
+                
+                input.oncancel = () => {
+                    log('⚠️ File manager dialog cancelled by user');
+                    try {
+                        document.body.removeChild(input);
+                    } catch (e) {}
+                };
+                
+                document.body.appendChild(input);
+                input.click();
+                
+                log('📁 File manager dialog opened (folder picker)');
+                
+                // Method 2: Try protocol method
+                setTimeout(() => {
+                    try {
+                        window.open('file:///', '_blank');
+                        log('🔗 Attempted to open system file explorer via protocol');
+                    } catch (e) {
+                        log('⚠️ Protocol method blocked by browser security');
+                        // Fallback to web file manager
+                        window.open('https://www.google.com/drive', '_blank');
+                        log('💾 Opened Google Drive as fallback file manager');
+                    }
+                }, 200);
+                
+            } catch (error) {
+                log('❌ Error with enhanced file manager: ' + error.message);
+            }
+        }
+
+        function testCalculator() {
+            try {
+                window.open('https://www.google.com/search?q=calculator', '_blank');
+                log('✅ Calculator opened (Google calculator)');
+            } catch (error) {
+                log('❌ Error opening calculator: ' + error.message);
+            }
+        }
+
+        function testSearch() {
+            try {
+                const searchQuery = 'weather Pakistan Lahore City';
+                const googleSearchUrl = `https://www.google.com/search?q=${encodeURIComponent(searchQuery)}`;
+                window.open(googleSearchUrl, '_blank');
+                log('✅ Search opened for: ' + searchQuery);
+            } catch (error) {
+                log('❌ Error opening search: ' + error.message);
+            }
+        }
+
+        function testSystemCommand() {
+            try {
+                log('🚀 Testing system command with CMD path...');
+                
+                // Simulate CMD path sequence display
+                const commandDisplay = document.createElement('div');
+                commandDisplay.style.cssText = `
+                    position: fixed;
+                    top: 100px;
+                    left: 20px;
+                    background: #1e1e1e;
+                    color: #00ff00;
+                    padding: 15px;
+                    border-radius: 10px;
+                    font-family: 'Courier New', monospace;
+                    font-size: 13px;
+                    border: 1px solid #00ff00;
+                    z-index: 10001;
+                    cursor: pointer;
+                    max-width: 450px;
+                `;
+                
+                const cmdPath = 'C:\\Users\\Packe\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\System Tools';
+                const commands = [
+                    `cd "${cmdPath}"`,
+                    'notepad.exe'
+                ];
+                
+                commandDisplay.innerHTML = `
+                    <div style="color: #ffff00; margin-bottom: 8px;">📟 CMD Sequence Test:</div>
+                    <div style="margin-bottom: 3px;">C:\\> ${commands[0]}</div>
+                    <div style="margin-bottom: 8px;">${cmdPath.substring(0, 30)}...> ${commands[1]}</div>
+                    <div style="color: #888; font-size: 11px; margin-top: 8px;">Click to copy full sequence</div>
+                `;
+                
+                const fullCommand = commands.join(' && ');
+                
+                commandDisplay.onclick = () => {
+                    navigator.clipboard.writeText(fullCommand).then(() => {
+                        commandDisplay.innerHTML = `
+                            <div style="color: #00ff00; margin-bottom: 5px;">✅ Commands copied!</div>
+                            <div style="font-size: 11px; color: #888;">Full sequence: ${fullCommand}</div>
+                            <div style="font-size: 11px; color: #888;">Paste in Command Prompt</div>
+                        `;
+                        log('✅ CMD sequence copied: ' + fullCommand);
+                    });
+                };
+                
+                document.body.appendChild(commandDisplay);
+                
+                // Show Windows+R alternative
+                setTimeout(() => {
+                    const shortcutTip = document.createElement('div');
+                    shortcutTip.style.cssText = `
+                        position: fixed;
+                        top: 250px;
+                        left: 20px;
+                        background: #2196F3;
+                        color: white;
+                        padding: 12px;
+                        border-radius: 8px;
+                        font-size: 12px;
+                        z-index: 10002;
+                        max-width: 300px;
+                    `;
+                    shortcutTip.innerHTML = `
+                        💡 <strong>Quick Alternative:</strong><br>
+                        Press <kbd>Win+R</kbd> → <code>notepad.exe</code>
+                    `;
+                    document.body.appendChild(shortcutTip);
+                    
+                    setTimeout(() => {
+                        if (shortcutTip.parentNode) {
+                            document.body.removeChild(shortcutTip);
+                        }
+                    }, 4000);
+                }, 1000);
+                
+                setTimeout(() => {
+                    if (commandDisplay.parentNode) {
+                        document.body.removeChild(commandDisplay);
+                    }
+                }, 10000);
+                
+                log('✅ CMD path sequence test displayed');
+                
+            } catch (error) {
+                log('❌ Error with CMD path test: ' + error.message);
+            }
+        }
+
+        function testTerminal() {
+            try {
+                log('💻 Testing terminal opening...');
+                
+                // Show notification
+                const notification = document.createElement('div');
+                notification.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    left: 20px;
+                    background: #4CAF50;
+                    color: white;
+                    padding: 15px 20px;
+                    border-radius: 10px;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                    z-index: 10000;
+                    font-family: Arial, sans-serif;
+                    font-size: 14px;
+                `;
+                notification.innerHTML = '💻 Opening Command Prompt...';
+                document.body.appendChild(notification);
+                
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        document.body.removeChild(notification);
+                    }
+                }, 3000);
+                
+                log('✅ Terminal command notification shown');
+                
+            } catch (error) {
+                log('❌ Error opening terminal: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>

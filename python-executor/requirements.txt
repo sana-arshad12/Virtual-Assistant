@@ -1,0 +1,23 @@
+# Virtual Assistant System Executor Requirements
+# Install with: pip install -r requirements.txt
+
+# Speech Recognition
+SpeechRecognition==3.10.0
+pyaudio==0.2.11
+
+# Text-to-Speech
+pyttsx3==2.90
+
+# Web Automation (optional for advanced features)
+selenium==4.15.2
+requests==2.31.0
+
+# System Integration
+psutil==5.9.6
+
+# Audio processing
+PyAudio==0.2.11
+
+# Additional dependencies for cross-platform support
+wheel>=0.37.0
+setuptools>=65.0.0
