@@ -1,5 +1,5 @@
 import React, { useState, useContext } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { userDataContext } from '../context/UserContext.jsx'
 import { authenticatedFetch } from '../utils/api.js'
 import bg from '../assets/authBg.png'
@@ -171,6 +171,12 @@ function SignIn() {
           )}
         </div>
 
+        <div className='w-full text-right px-4'>
+          <Link to='/forgot-password' className='text-blue-400 hover:text-blue-300 text-sm transition-colors'>
+            Forgot Password?
+          </Link>
+        </div>
+
         <button 
           type="submit"
           disabled={loading}
@@ -181,9 +187,9 @@ function SignIn() {
 
         <p className='text-gray-300 text-[16px] mt-[10px]'>
           Don't have an account? 
-          <a href="/signup" className='text-blue-400 hover:text-blue-300 ml-1 underline'>
+          <Link to="/signup" className='text-blue-400 hover:text-blue-300 ml-1 underline'>
             Sign Up
-          </a>
+          </Link>
         </p>
       </form>
     </div>
