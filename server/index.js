@@ -14,42 +14,18 @@ dotenv.config();
 
 const app = express();
 
-// CORS configuration - Allow local development and Vercel domains
-const allowedOrigins = [
-  "http://localhost:5173",
-  "http://localhost:5174", 
-  "http://localhost:5175",
-  "https://virtual-assistant-client.vercel.app",
-  /^https:\/\/.*\.vercel\.app$/, // Allow all Vercel deployments
-  /^https:\/\/virtual-assistant.*\.vercel\.app$/ // Allow all your Vercel project deployments
-];
-
+// Simplified CORS - Allow all origins in production (temporary fix)
 app.use(cors({
-  origin: function(origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    
-    // Check if origin is in allowed list or matches Vercel pattern
-    const isAllowed = allowedOrigins.some(allowed => {
-      if (allowed instanceof RegExp) {
-        return allowed.test(origin);
-      }
-      return allowed === origin;
-    });
-    
-    if (isAllowed) {
-      callback(null, true);
-    } else {
-      console.log('❌ CORS blocked origin:', origin);
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
+  origin: true, // Allow all origins
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'X-Requested-With'],
   exposedHeaders: ['Set-Cookie'],
   optionsSuccessStatus: 200
 }));
+
+// Additional CORS headers for preflight
+app.options('*', cors());
 
 app.use(express.json());
 app.use(cookieParser());

@@ -25,6 +25,23 @@ export const executeSystemCommand = async (req, res) => {
 
     console.log('🔧 System command request:', command, parameters)
 
+    // Check if running on Vercel (serverless environment)
+    const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME
+
+    if (isServerless) {
+      return res.status(200).json({
+        success: false,
+        message: 'System commands are not available in cloud deployments. This feature only works on your local device where the app has system access.',
+        tip: 'To use system commands like opening file manager or applications, please run this application locally on your device.',
+        availableOnline: [
+          'AI chat responses',
+          'Web searches',
+          'Information lookup',
+          'General assistance'
+        ]
+      })
+    }
+
     if (!command) {
       return res.status(400).json({
         success: false,
