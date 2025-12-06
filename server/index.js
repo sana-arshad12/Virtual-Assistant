@@ -14,7 +14,11 @@ dotenv.config();
 
 const app = express();
 
-// CORS Configuration - Allow all origins for development and production
+// Parse JSON FIRST (before CORS)
+app.use(express.json());
+app.use(cookieParser());
+
+// CORS Configuration - Must be after body parsing
 const corsOptions = {
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps or curl)
@@ -33,28 +37,23 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-// Handle preflight requests
-app.options('*', cors(corsOptions));
-
-// Additional middleware to ensure CORS headers are always set
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  if (origin) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-  }
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie, X-Requested-With, Accept');
-  next();
+// Handle preflight requests explicitly
+app.options('*', (req, res) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie, X-Requested-With, Accept');
+  res.sendStatus(200);
 });
 
-app.use(express.json());
-app.use(cookieParser());
+});
 
 // Health route
 app.get("/health", (req, res) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Credentials', 'true');
   console.log('💚 Health check requested');
-  res.json({ status: "ok", port: process.env.PORT || 'unknown', timestamp: new Date().toISOString() });
+  res.json({ status: "ok", port: process.env.PORT || 'unknown', timestamp: new Date.toISOString() });
 });
 
 // Add request logging middleware
