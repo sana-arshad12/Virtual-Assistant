@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import crypto from 'crypto'
 import User from '../models/user.model.js'
+import { sendOTPEmail, sendPasswordResetConfirmation } from '../config/email.js'
 
 // Register User (signUp)
 export const signUp = async (req, res) => {
@@ -130,14 +131,27 @@ export const forgotPassword = async (req, res) => {
     console.log('✅ Password reset OTP generated for:', email)
     console.log('🔑 OTP (development mode):', otp)
 
-    // In a real application, you would send this OTP via email
-    // For now, we'll return it in the response (NOT recommended for production)
-    res.status(200).json({
-      message: 'OTP has been sent to your email address',
-      otp, // In production, send this via email instead
-      email: email,
-      expiresIn: '10 minutes'
-    })
+    // Send OTP via email
+    const emailResult = await sendOTPEmail(email, otp, user.name)
+    
+    if (emailResult.success) {
+      res.status(200).json({
+        message: 'OTP has been sent to your email address',
+        email: email,
+        expiresIn: '10 minutes',
+        ...(process.env.NODE_ENV === 'development' && { otp }) // Only in development
+      })
+    } else {
+      // If email fails, still return success but with OTP in response for development
+      console.error('⚠️ Email sending failed, returning OTP in response')
+      res.status(200).json({
+        message: 'OTP generated but email service unavailable. OTP shown below (development mode):',
+        otp, // Fallback for development
+        email: email,
+        expiresIn: '10 minutes',
+        emailError: emailResult.error
+      })
+    }
 
   } catch (error) {
     console.error('❌ Forgot password error:', error)
@@ -253,6 +267,9 @@ export const resetPassword = async (req, res) => {
     await user.save()
 
     console.log('✅ Password reset successful for:', user.email)
+
+    // Send confirmation email
+    await sendPasswordResetConfirmation(user.email, user.name)
 
     res.status(200).json({
       message: 'Password reset successful. You can now login with your new password.'
