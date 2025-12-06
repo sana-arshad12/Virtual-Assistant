@@ -14,18 +14,39 @@ dotenv.config();
 
 const app = express();
 
-// Simplified CORS - Allow all origins in production (temporary fix)
-app.use(cors({
-  origin: true, // Allow all origins
+// CORS Configuration - Allow all origins for development and production
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl)
+    if (!origin) return callback(null, true);
+    
+    // Allow all origins in development and production
+    callback(null, true);
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'X-Requested-With'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'X-Requested-With', 'Accept'],
   exposedHeaders: ['Set-Cookie'],
-  optionsSuccessStatus: 200
-}));
+  optionsSuccessStatus: 200,
+  preflightContinue: false
+};
 
-// Additional CORS headers for preflight
-app.options('*', cors());
+app.use(cors(corsOptions));
+
+// Handle preflight requests
+app.options('*', cors(corsOptions));
+
+// Additional middleware to ensure CORS headers are always set
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie, X-Requested-With, Accept');
+  next();
+});
 
 app.use(express.json());
 app.use(cookieParser());
@@ -61,13 +82,19 @@ app.use("/api/user", userRouter);
 app.use("/api/ai", aiRouter);
 app.use("/api/system", systemRouter);
 
-// Auto-start Python executor and proxy
+// Auto-start Python executor (only in local development)
 const PY_HOST = process.env.PY_HOST || 'localhost'
 const PY_PORT = parseInt(process.env.PY_PORT, 10) || 8080
 const PY_URL = process.env.PY_EXECUTOR_URL || `http://${PY_HOST}:${PY_PORT}`
 
 let pyProcess = null
 const startPython = () => {
+  // Don't start Python in serverless environments
+  if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) {
+    console.log('⚠️  Python executor disabled in serverless environment')
+    return
+  }
+  
   if (pyProcess) return
   // Use 'py' on Windows, 'python3' or 'python' on other systems
   const pythonCmd = process.env.PYTHON_BIN || (process.platform === 'win32' ? 'py' : 'python3')
@@ -101,52 +128,69 @@ app.use('/api/system', createProxyMiddleware({
 }))
 */
 
-// Start server with automatic fallback if port is busy
+// Start server with automatic fallback if port is busy (only in local mode)
 const basePort = parseInt(process.env.PORT, 10) || 8000;
 
-const startServer = (portToTry, attempt = 1, maxAttempts = 10) => {
-  const server = app.listen(portToTry, () => {
-    if (attempt > 1) {
-      console.log(`⚠️  Using fallback port (original busy).`);
-    }
-    console.log(`🚀 Server running at http://localhost:${portToTry}`);
-  });
+// Check if running on Vercel
+const isVercel = process.env.VERCEL || process.env.VERCEL_ENV;
 
-  server.on("error", (err) => {
-    if (err.code === "EADDRINUSE") {
-      if (attempt < maxAttempts) {
-        const nextPort = portToTry + 1;
-        console.warn(`Port ${portToTry} in use, trying ${nextPort}... (attempt ${attempt + 1}/${maxAttempts})`);
-        startServer(nextPort, attempt + 1, maxAttempts);
+if (isVercel) {
+  // Vercel serverless mode - export app for serverless functions
+  console.log('🌐 Running in Vercel serverless mode');
+  
+  // Connect to database
+  connectDB().catch(err => {
+    console.error('MongoDB connection failed:', err.message);
+  });
+  
+  // Export for Vercel
+  export default app;
+} else {
+  // Local development mode
+  const startServer = (portToTry, attempt = 1, maxAttempts = 10) => {
+    const server = app.listen(portToTry, () => {
+      if (attempt > 1) {
+        console.log(`⚠️  Using fallback port (original busy).`);
+      }
+      console.log(`🚀 Server running at http://localhost:${portToTry}`);
+    });
+
+    server.on("error", (err) => {
+      if (err.code === "EADDRINUSE") {
+        if (attempt < maxAttempts) {
+          const nextPort = portToTry + 1;
+          console.warn(`Port ${portToTry} in use, trying ${nextPort}... (attempt ${attempt + 1}/${maxAttempts})`);
+          startServer(nextPort, attempt + 1, maxAttempts);
+        } else {
+          console.error(`Failed to find a free port after ${maxAttempts} attempts.`);
+          process.exit(1);
+        }
       } else {
-        console.error(`Failed to find a free port after ${maxAttempts} attempts.`);
+        console.error("Server error:", err);
         process.exit(1);
       }
-    } else {
-      console.error("Server error:", err);
+    });
+  };
+
+  // Graceful shutdown
+  const graceful = () => {
+    console.log("\nShutting down gracefully...");
+    if (pyProcess && !pyProcess.killed) {
+      try { pyProcess.kill(); } catch {}
+    }
+    process.exit(0);
+  };
+  process.on("SIGINT", graceful);
+  process.on("SIGTERM", graceful);
+
+  // Initialize (connect DB first, then start server)
+  (async () => {
+    try {
+      await connectDB();
+      startServer(basePort);
+    } catch (err) {
+      console.error("Failed to initialize application:", err.message);
       process.exit(1);
     }
-  });
-};
-
-// Graceful shutdown
-const graceful = () => {
-  console.log("\nShutting down gracefully...");
-  if (pyProcess && !pyProcess.killed) {
-    try { pyProcess.kill(); } catch {}
-  }
-  process.exit(0);
-};
-process.on("SIGINT", graceful);
-process.on("SIGTERM", graceful);
-
-// Initialize (connect DB first, then start server)
-(async () => {
-  try {
-    await connectDB();
-    startServer(basePort);
-  } catch (err) {
-    console.error("Failed to initialize application:", err.message);
-    process.exit(1);
-  }
-})();
+  })();
+}

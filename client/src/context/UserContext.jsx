@@ -2,24 +2,24 @@
 
 import { createContext, useEffect, useState, useRef } from "react"
 import { api, authenticatedFetch } from "../utils/api.js"
+import { autoOpenApp, openApp, openFileManager, openTerminal } from "../utils/systemExecutor.js"
+
 export const userDataContext = createContext()
 
 function UserContext({ children }) {
   const serverUrl = (() => {
     try {
-      // Try Next.js environment variables first
-      if (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_API_BASE) {
-        return process.env.NEXT_PUBLIC_API_BASE
+      // Try Vite environment variables (VITE_API_URL)
+      if (typeof import.meta !== "undefined" && import.meta.env?.VITE_API_URL) {
+        console.log('📡 Using env API URL:', import.meta.env.VITE_API_URL)
+        return import.meta.env.VITE_API_URL
       }
-      // Try Vite environment variables
-      if (typeof import.meta !== "undefined" && import.meta.env?.VITE_API_BASE) {
-        return import.meta.env.VITE_API_BASE
-      }
-      // Updated fallback - will be auto-detected by API utility
-      return "http://localhost:8001"
+      // Fallback to local development
+      console.log('📡 Using default local server')
+      return "http://localhost:8000"
     } catch (error) {
       console.log("Using default server URL due to environment variable access error")
-      return "http://localhost:8001"
+      return "http://localhost:8000"
     }
   })()
 
@@ -352,13 +352,30 @@ function UserContext({ children }) {
                 toggleListening()
                 console.log("🎤 Listening toggled")
                 break
+              case "open_file_manager":
+                await openFileManager(data.parameters?.path)
+                console.log("📁 Opening file manager")
+                break
+              case "open_app":
+                await openApp(data.parameters?.app || data.parameters?.app_name)
+                console.log("🚀 Opening app:", data.parameters?.app)
+                break
+              case "open_terminal":
+                await openTerminal()
+                console.log("💻 Opening terminal")
+                break
               default:
-                console.log("❓ Unknown action:", data.action)
+                console.log("❓ Checking for app names in command...")
+                // Try auto-detect app from the command
+                await autoOpenApp(command)
                 break
             }
           } catch (actionError) {
             console.error("Error handling action:", actionError)
           }
+        } else {
+          // No explicit action, try to auto-detect app opening intent
+          await autoOpenApp(command)
         }
       } else {
         console.error("Failed to process voice command")

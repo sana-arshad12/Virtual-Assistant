@@ -127,8 +127,10 @@ async function openApplication(parameters = {}) {
       }
     }
 
-    // Map common app names to Windows commands
+    // Dynamic app mapping - Uses Windows 'start' command and protocol handlers
+    // No hardcoded paths - relies on system PATH and Windows registry associations
     const appMapping = {
+      // System Apps (built-in Windows commands)
       'calculator': 'calc',
       'calc': 'calc',
       'notepad': 'notepad',
@@ -136,6 +138,7 @@ async function openApplication(parameters = {}) {
       'wordpad': 'write',
       'cmd': 'cmd',
       'command prompt': 'cmd',
+      'powershell': 'powershell',
       'terminal': 'cmd',
       'task manager': 'taskmgr',
       'taskmgr': 'taskmgr',
@@ -143,10 +146,75 @@ async function openApplication(parameters = {}) {
       'control': 'control',
       'settings': 'ms-settings:',
       'snipping tool': 'snippingtool',
-      'character map': 'charmap'
+      'character map': 'charmap',
+      'registry editor': 'regedit',
+      'regedit': 'regedit',
+      
+      // Microsoft Office (uses 'start' command to find via Windows associations)
+      'word': 'start winword',
+      'microsoft word': 'start winword',
+      'excel': 'start excel',
+      'microsoft excel': 'start excel',
+      'powerpoint': 'start powerpnt',
+      'microsoft powerpoint': 'start powerpnt',
+      'outlook': 'start outlook',
+      'microsoft outlook': 'start outlook',
+      
+      // Web Browsers (uses protocol handlers and 'start' command)
+      'chrome': 'start chrome',
+      'google chrome': 'start chrome',
+      'edge': 'start msedge',
+      'microsoft edge': 'start msedge',
+      'firefox': 'start firefox',
+      'mozilla firefox': 'start firefox',
+      'brave': 'start brave',
+      'opera': 'start opera',
+      
+      // Code Editors (relies on PATH environment variable)
+      'vscode': 'code',
+      'visual studio code': 'code',
+      'vs code': 'code',
+      'notepad++': 'start notepad++',
+      'sublime text': 'start sublime_text',
+      'atom': 'start atom',
+      
+      // Media Players (uses 'start' command for Windows associations)
+      'spotify': 'start spotify',
+      'vlc': 'start vlc',
+      'vlc player': 'start vlc',
+      'windows media player': 'wmplayer',
+      'media player': 'wmplayer',
+      
+      // Communication Apps (uses protocol handlers)
+      'discord': 'start discord',
+      'slack': 'start slack',
+      'zoom': 'start zoom',
+      'teams': 'start ms-teams:',
+      'microsoft teams': 'start ms-teams:',
+      'skype': 'start skype',
+      
+      // File Management
+      'explorer': 'explorer',
+      'file manager': 'explorer',
+      'file explorer': 'explorer',
+      'this pc': 'explorer',
+      
+      // Gaming & Design (uses 'start' command)
+      'steam': 'start steam',
+      'epic games': 'start com.epicgames.launcher:',
+      'photoshop': 'start photoshop',
+      'adobe photoshop': 'start photoshop',
+      'obs': 'start obs64',
+      'obs studio': 'start obs64',
+      'gimp': 'start gimp',
+      'blender': 'start blender',
+      
+      // Development Tools
+      'git': 'start git-bash',
+      'git bash': 'start git-bash'
     }
 
-    const command = appMapping[appName.toLowerCase()] || appName
+    const command = appMapping[appName.toLowerCase()] || `start ${appName}`
     
     await execAsync(command)
     
