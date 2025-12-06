@@ -1,5 +1,16 @@
 @import "tailwindcss";
 
+/* Prevent zoom on input focus for mobile */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+input,
+textarea,
+select {
+  font-size: 16px !important; /* Prevents iOS zoom on focus */
+}
+
 /* Custom animations for improved UX */
 @keyframes fadeIn {
   from {
@@ -48,4 +59,18 @@
 
 .chat-scroll::-webkit-scrollbar-thumb:hover {
   background: rgba(59, 130, 246, 0.7);
+}
+
+/* Mobile-specific styles */
+@media (max-width: 640px) {
+  /* Prevent horizontal scroll */
+  body {
+    overflow-x: hidden;
+  }
+  
+  /* Better touch targets */
+  button {
+    min-height: 44px;
+    min-width: 44px;
+  }
 }

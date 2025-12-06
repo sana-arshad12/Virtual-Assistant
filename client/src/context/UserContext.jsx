@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useEffect, useState } from "react"
+import { createContext, useEffect, useState, useRef } from "react"
 import { api, authenticatedFetch } from "../utils/api.js"
 export const userDataContext = createContext()
 
@@ -30,43 +30,54 @@ function UserContext({ children }) {
   const [isProcessing, setIsProcessing] = useState(false)
   const [speechSupported, setSpeechSupported] = useState(false)
   const [isRecognitionActive, setIsRecognitionActive] = useState(false)
-  const [shouldRestart, setShouldRestart] = useState(true)
+  const [shouldRestart, setShouldRestart] = useState(false) // Start as false, enable manually
   const [serverConnected, setServerConnected] = useState(false)
+  const recognitionRef = useRef(null) // Store recognition instance
+  const restartTimeoutRef = useRef(null) // Store restart timeout
+  const isRestartingRef = useRef(false) // Prevent multiple restarts
 
+  // Initialize speech recognition support check
   useEffect(() => {
-    if (!("webkitSpeechRecognition" in window) && !("SpeechRecognition" in window)) {
-      setSpeechSupported(false)
-      console.log("❌ Speech recognition not supported")
+    const checkSupport = () => {
+      const isSupported = ('SpeechRecognition' in window) || ('webkitSpeechRecognition' in window)
+      setSpeechSupported(isSupported)
+      if (!isSupported) {
+        console.log("❌ Speech recognition not supported in this browser. Please use Chrome or Edge.")
+      } else {
+        console.log("✅ Speech recognition is supported")
+      }
+    }
+    checkSupport()
+  }, [])
+
+  // Speech recognition setup
+  useEffect(() => {
+    // Don't initialize if not supported or user data not ready
+    if (!speechSupported || !userData?.assistantName) {
       return
     }
 
-    setSpeechSupported(true)
-
-    if (!userData?.assistantName) {
-      console.log("⏳ Waiting for userData to initialize speech recognition...")
-      return
-    }
-
+    // Don't initialize if not enabled
     if (!shouldRestart) {
-      console.log("🛑 Speech recognition restart disabled")
       return
     }
+
+    console.log(`🎤 Initializing speech recognition for wake word: "${userData.assistantName}"...`)
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
-    if (!SpeechRecognition) {
-      setSpeechSupported(false)
-      console.log("❌ Speech recognition not supported")
-      return
-    }
-
     const recognitionInstance = new SpeechRecognition()
+    
+    // Configuration
     recognitionInstance.continuous = true
     recognitionInstance.interimResults = true
     recognitionInstance.lang = "en-US"
+    recognitionInstance.maxAlternatives = 1
+    
+    // Store in ref
+    recognitionRef.current = recognitionInstance
 
     recognitionInstance.onstart = () => {
-      const wakeWord = userData?.assistantName?.toLowerCase() || "assistant"
-      console.log(`🎤 Started listening for wake word "${wakeWord}"...`)
+      console.log(`✅ Listening for "${userData.assistantName}"...`)
       setIsListening(true)
       setIsRecognitionActive(true)
     }
@@ -77,15 +88,15 @@ function UserContext({ children }) {
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const transcript = event.results[i][0].transcript
         if (event.results[i].isFinal) {
-          finalTranscript += transcript
+          finalTranscript += transcript + " "
         }
       }
 
-      if (finalTranscript) {
+      if (finalTranscript.trim()) {
         const lowerTranscript = finalTranscript.toLowerCase().trim()
         const wakeWord = userData?.assistantName?.toLowerCase() || "assistant"
 
-        console.log(`🔍 Heard: "${finalTranscript}" | Looking for wake word: "${wakeWord}"`)
+        console.log(`🔍 Heard: "${finalTranscript}" | Looking for: "${wakeWord}"`)
 
         // Check if the transcript contains the wake word
         if (lowerTranscript.includes(wakeWord)) {
@@ -96,11 +107,11 @@ function UserContext({ children }) {
           const commandPart = lowerTranscript.substring(wakeWordIndex + wakeWord.length).trim()
 
           if (commandPart) {
-            console.log(`🎯 Command extracted: "${commandPart}"`)
+            console.log(`🎯 Command: "${commandPart}"`)
             handleVoiceCommand(commandPart)
           } else {
-            console.log("⚠️ Wake word detected but no command found")
-            speakResponse("Yes, how can I help you?")
+            console.log("⚠️ Wake word detected, waiting for command...")
+            speakResponse("Yes, I'm listening. How can I help you?")
           }
         }
       }
@@ -109,83 +120,105 @@ function UserContext({ children }) {
     recognitionInstance.onerror = (event) => {
       console.error("🚨 Speech recognition error:", event.error)
       
-      // Don't restart on aborted - it's expected when manually stopped
+      // Handle different error types
       if (event.error === "aborted") {
-        console.log("Speech recognition aborted")
+        console.log("Speech recognition aborted - normal stop")
         setIsListening(false)
         setIsRecognitionActive(false)
+        isRestartingRef.current = false
+        return // Don't restart on manual stop
+      }
+      
+      if (event.error === "not-allowed" || event.error === "service-not-allowed") {
+        console.error("❌ Microphone permission denied")
+        setShouldRestart(false)
+        setIsListening(false)
+        setIsRecognitionActive(false)
+        isRestartingRef.current = false
+        alert("Please allow microphone access to use voice commands. Check your browser settings.")
         return
       }
       
+      if (event.error === "no-speech") {
+        console.log("No speech detected, will restart...")
+        return
+      }
+      
+      // For other errors, just log
+      console.log("Error type:", event.error, "- will attempt restart")
+    }
+
+    recognitionInstance.onend = () => {
+      console.log("🔇 Speech recognition ended")
       setIsListening(false)
       setIsRecognitionActive(false)
 
-      // Auto-restart only on no-speech
-      if (event.error === "no-speech" && shouldRestart) {
-        console.log("🔄 Restarting speech recognition due to:", event.error)
-        setTimeout(() => {
-          if (shouldRestart && recognitionInstance && !isRecognitionActive) {
+      // Clear any pending restart
+      if (restartTimeoutRef.current) {
+        clearTimeout(restartTimeoutRef.current)
+      }
+
+      // Auto-restart if enabled and not already restarting
+      if (shouldRestart && !isRestartingRef.current) {
+        console.log("🔄 Scheduling restart...")
+        isRestartingRef.current = true
+        
+        restartTimeoutRef.current = setTimeout(() => {
+          if (shouldRestart && recognitionRef.current) {
             try {
-              recognitionInstance.start()
+              recognitionRef.current.start()
+              console.log("✅ Restarted successfully")
+              isRestartingRef.current = false
             } catch (error) {
-              console.error("Failed to restart recognition:", error)
+              if (error.message.includes("already started")) {
+                console.log("Already active")
+              } else {
+                console.error("Restart failed:", error.message)
+              }
+              isRestartingRef.current = false
             }
+          } else {
+            isRestartingRef.current = false
           }
         }, 1000)
       }
     }
 
-    recognitionInstance.onend = () => {
-      console.log("🔇 Speech recognition ended")
-      const wasActive = isRecognitionActive
-      setIsListening(false)
-      setIsRecognitionActive(false)
-
-      // Auto-restart if should restart is true and it was actively listening
-      if (shouldRestart && wasActive) {
-        console.log("🔄 Auto-restarting speech recognition...")
-        setTimeout(() => {
-          if (shouldRestart && recognitionInstance) {
-            try {
-              recognitionInstance.start()
-              console.log("✅ Speech recognition restarted")
-            } catch (error) {
-              if (error.message.includes("already started")) {
-                console.log("Speech recognition already active")
-              } else {
-                console.error("Failed to restart recognition:", error)
-              }
-            }
-          }
-        }, 500)
-      }
-    }
-
-    // Start listening immediately
+    // Start listening
     try {
       recognitionInstance.start()
-      console.log(
-        '✅ Speech recognition initialized with wake word "' +
-          (userData?.assistantName?.toLowerCase() || "assistant") +
-          '"',
-      )
+      console.log(`✅ Speech recognition started for "${userData.assistantName}"`)
     } catch (error) {
-      console.error("Failed to start initial recognition:", error)
-    }
-
-    // Return cleanup function that references the local recognitionInstance
-    return () => {
-      setShouldRestart(false)
-      setIsRecognitionActive(false)
-      if (recognitionInstance) {
-        try {
-          recognitionInstance.stop()
-        } catch (error) {
-          console.log("Error stopping recognition on cleanup:", error)
-        }
+      console.error("Failed to start:", error.message)
+      if (error.message.includes("already started")) {
+        console.log("Recognition already running")
       }
     }
-  }, [userData?.assistantName]) // Only depend on assistant name, not full userData
+
+    // Cleanup
+    return () => {
+      console.log("🧹 Cleaning up speech recognition...")
+      
+      // Clear any pending restart
+      if (restartTimeoutRef.current) {
+        clearTimeout(restartTimeoutRef.current)
+        restartTimeoutRef.current = null
+      }
+      
+      isRestartingRef.current = false
+      
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop()
+          recognitionRef.current = null
+        } catch (error) {
+          console.log("Cleanup error:", error.message)
+        }
+      }
+      setIsListening(false)
+      setIsRecognitionActive(false)
+    }
+  }, [userData?.assistantName, shouldRestart, speechSupported])
 
   const handleCurrentUser = async () => {
     try {
@@ -499,11 +532,37 @@ function UserContext({ children }) {
   }
 
   const toggleListening = () => {
-    setShouldRestart(!shouldRestart)
-    if (shouldRestart) {
-      console.log("🛑 Stopping speech recognition...")
-    } else {
-      console.log("▶️ Starting speech recognition...")
+    if (!speechSupported) {
+      alert("Speech recognition is not supported in your browser. Please use Chrome or Edge.")
+      return
+    }
+
+    if (!userData?.assistantName) {
+      alert("Please sign in first to use voice commands.")
+      return
+    }
+
+    const newState = !shouldRestart
+    console.log(newState ? "▶️ Enabling voice recognition..." : "🛑 Disabling voice recognition...")
+    setShouldRestart(newState)
+    
+    // If turning off, stop immediately and clear timeouts
+    if (!newState) {
+      if (restartTimeoutRef.current) {
+        clearTimeout(restartTimeoutRef.current)
+        restartTimeoutRef.current = null
+      }
+      isRestartingRef.current = false
+      
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop()
+          setIsListening(false)
+          setIsRecognitionActive(false)
+        } catch (error) {
+          console.log("Stop error:", error.message)
+        }
+      }
     }
   }
 

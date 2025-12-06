@@ -183,12 +183,23 @@ function Home() {
                 </p>
                 
                 {speechSupported && (
-                  <div className='bg-gradient-to-r from-blue-500/20 to-purple-500/20 backdrop-blur-sm border border-blue-500/30 rounded-xl p-3 sm:p-4'>
-                    <p className='text-blue-300 text-xs sm:text-sm flex items-center gap-2 justify-center'>
+                  <div className={`backdrop-blur-sm border rounded-xl p-3 sm:p-4 ${
+                    isListening 
+                      ? 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 border-green-500/30' 
+                      : 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 border-blue-500/30'
+                  }`}>
+                    <p className={`text-xs sm:text-sm flex items-center gap-2 justify-center ${
+                      isListening ? 'text-green-300' : 'text-blue-300'
+                    }`}>
                       <svg className='w-4 h-4 sm:w-5 sm:h-5' fill='currentColor' viewBox='0 0 24 24'>
                         <path d='M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.49 6-3.31 6-6.72h-1.7z'/>
                       </svg>
-                      <span className='text-center'>Voice active! Say <strong>"{userData?.assistantName || 'Assistant'}"</strong></span>
+                      <span className='text-center'>
+                        {isListening 
+                          ? <><strong>🎤 Listening...</strong> Say <strong>"{userData?.assistantName}"</strong> then your command</>
+                          : <>Click the microphone button below to activate voice recognition</>
+                        }
+                      </span>
                     </p>
                   </div>
                 )}
@@ -342,7 +353,7 @@ function Home() {
                     ? 'bg-emerald-500/90 hover:bg-emerald-600/90 text-white border-emerald-400/50 shadow-emerald-500/50' 
                     : 'bg-gray-600/80 hover:bg-gray-500/80 text-gray-200 border-gray-500/50 shadow-gray-600/30'
                 }`}
-                title={isListening ? 'Stop Voice Recognition' : 'Start Voice Recognition'}
+                title={isListening ? `Click to Stop - Currently listening for "${userData?.assistantName}"` : `Click to Start Voice Recognition - Say "${userData?.assistantName}" then your command`}
               >
                 <svg className='w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6' fill='currentColor' viewBox='0 0 24 24'>
                   <path d='M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.49 6-3.31 6-6.72h-1.7z'/>
