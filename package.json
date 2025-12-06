@@ -4,6 +4,12 @@
   "description": "AI-powered virtual assistant with voice recognition and system command execution",
   "type": "module",
   "scripts": {
+    "install:client": "cd client && npm install",
+    "install:server": "cd server && npm install",
+    "build:client": "cd client && npm run build",
+    "dev:client": "cd client && npm run dev",
+    "dev:server": "cd server && node index.js",
+    "build": "npm run install:client && npm run build:client",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Sana Arshad",
