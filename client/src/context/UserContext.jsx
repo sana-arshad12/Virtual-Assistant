@@ -108,14 +108,23 @@ function UserContext({ children }) {
 
     recognitionInstance.onerror = (event) => {
       console.error("🚨 Speech recognition error:", event.error)
+      
+      // Don't restart on aborted - it's expected when manually stopped
+      if (event.error === "aborted") {
+        console.log("Speech recognition aborted")
+        setIsListening(false)
+        setIsRecognitionActive(false)
+        return
+      }
+      
       setIsListening(false)
       setIsRecognitionActive(false)
 
-      // Auto-restart on certain errors
-      if (event.error === "no-speech" || event.error === "aborted") {
+      // Auto-restart only on no-speech
+      if (event.error === "no-speech" && shouldRestart) {
         console.log("🔄 Restarting speech recognition due to:", event.error)
         setTimeout(() => {
-          if (shouldRestart && recognitionInstance) {
+          if (shouldRestart && recognitionInstance && !isRecognitionActive) {
             try {
               recognitionInstance.start()
             } catch (error) {
@@ -128,18 +137,24 @@ function UserContext({ children }) {
 
     recognitionInstance.onend = () => {
       console.log("🔇 Speech recognition ended")
+      const wasActive = isRecognitionActive
       setIsListening(false)
       setIsRecognitionActive(false)
 
-      // Auto-restart if should restart is true
-      if (shouldRestart) {
+      // Auto-restart if should restart is true and it was actively listening
+      if (shouldRestart && wasActive) {
         console.log("🔄 Auto-restarting speech recognition...")
         setTimeout(() => {
           if (shouldRestart && recognitionInstance) {
             try {
               recognitionInstance.start()
+              console.log("✅ Speech recognition restarted")
             } catch (error) {
-              console.error("Failed to restart recognition:", error)
+              if (error.message.includes("already started")) {
+                console.log("Speech recognition already active")
+              } else {
+                console.error("Failed to restart recognition:", error)
+              }
             }
           }
         }, 500)

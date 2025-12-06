@@ -208,7 +208,7 @@ function Home() {
             </div>
           ) : (
             chatHistory.map((chat, index) => (
-              <div key={chat.timestamp || index} className='animate-fadeIn'>
+              <div key={`chat-${index}-${chat.timestamp || Date.now()}`} className='animate-fadeIn'>
                 {chat.role === 'user' ? (
                   /* User Message - Modern Style */
                   <div className='flex justify-end mb-3 sm:mb-4'>
