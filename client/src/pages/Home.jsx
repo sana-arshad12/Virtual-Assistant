@@ -77,9 +77,9 @@ function Home() {
     <div className='min-h-screen bg-gradient-to-t from-[black] to-[#030353] flex flex-col'>
       {/* Modern Header with Glassmorphism Effect - Responsive */}
       <header className='backdrop-blur-xl bg-white/10 border-b border-white/20 px-3 sm:px-6 py-3 sm:py-4 shadow-2xl'>
-        <div className='max-w-7xl mx-auto flex justify-between items-center'>
-          <div className='flex items-center gap-2 sm:gap-4'>
-            <div className='relative'>
+        <div className='max-w-7xl mx-auto flex justify-between items-center gap-2'>
+          <div className='flex items-center gap-2 sm:gap-4 min-w-0 flex-1'>
+            <div className='relative flex-shrink-0'>
               {userData?.assistantImage && (
                 <div className='w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden border-2 border-gradient-to-r from-blue-400 to-purple-500 shadow-lg'>
                   <img 
@@ -93,12 +93,13 @@ function Home() {
                 serverConnected ? 'bg-green-500' : 'bg-red-500'
               } animate-pulse`}></div>
             </div>
-            <div>
-              <h1 className='text-white text-base sm:text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent'>
+            <div className='min-w-0 flex-1'>
+              <h1 className='text-white text-sm sm:text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent truncate'>
                 {userData?.assistantName || 'Your Assistant'}
               </h1>
-              <p className='text-slate-300 text-xs sm:text-sm flex items-center gap-2'>
-                <span className='hidden sm:inline'>Welcome back,</span> {userData?.name}
+              <p className='text-slate-300 text-xs sm:text-sm flex items-center gap-1 sm:gap-2 flex-wrap'>
+                <span className='hidden sm:inline'>Welcome back,</span> 
+                <span className='truncate max-w-[100px] sm:max-w-none'>{userData?.name}</span>
                 {isListening && (
                   <span className='flex items-center gap-1 text-green-400 animate-pulse'>
                     <span className='w-2 h-2 bg-green-400 rounded-full animate-ping inline-block'></span>
@@ -109,11 +110,11 @@ function Home() {
             </div>
           </div>
           
-          <div className='flex items-center gap-1.5 sm:gap-3'>
+          <div className='flex items-center gap-1 sm:gap-2 md:gap-3 flex-shrink-0'>
             {!serverConnected && (
               <button
                 onClick={() => retryServerConnection && retryServerConnection()}
-                className='bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 p-1.5 sm:p-2 rounded-lg sm:rounded-xl backdrop-blur-sm border border-yellow-500/30 transition-all duration-300 hover:scale-110'
+                className='bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 p-1.5 sm:p-2 rounded-lg backdrop-blur-sm border border-yellow-500/30 transition-all duration-300 hover:scale-110'
                 title='Retry Server Connection'
               >
                 <svg className='w-4 h-4 sm:w-5 sm:h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
@@ -124,7 +125,7 @@ function Home() {
             
             <button
               onClick={() => clearChatHistory()}
-              className='bg-slate-500/20 hover:bg-slate-500/30 text-slate-300 p-1.5 sm:p-2 rounded-lg sm:rounded-xl backdrop-blur-sm border border-slate-500/30 transition-all duration-300 hover:scale-110'
+              className='bg-slate-500/20 hover:bg-slate-500/30 text-slate-300 p-1.5 sm:p-2 rounded-lg backdrop-blur-sm border border-slate-500/30 transition-all duration-300 hover:scale-110'
               title='Clear Chat History'
             >
               <svg className='w-4 h-4 sm:w-5 sm:h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
@@ -134,7 +135,7 @@ function Home() {
             
             <button
               onClick={() => navigate('/customization')}
-              className='hidden sm:block bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 p-1.5 sm:p-2 rounded-lg sm:rounded-xl backdrop-blur-sm border border-purple-500/30 transition-all duration-300 hover:scale-110'
+              className='hidden sm:block bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 p-1.5 sm:p-2 rounded-lg backdrop-blur-sm border border-purple-500/30 transition-all duration-300 hover:scale-110'
               title='Customize Assistant'
             >
               <svg className='w-4 h-4 sm:w-5 sm:h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
@@ -144,7 +145,7 @@ function Home() {
             
             <button
               onClick={handleLogoutClick}
-              className='bg-red-500/20 hover:bg-red-500/30 text-red-300 px-2 py-1.5 sm:px-4 sm:py-2 rounded-lg sm:rounded-xl backdrop-blur-sm border border-red-500/30 transition-all duration-300 hover:scale-105 font-medium text-xs sm:text-sm'
+              className='bg-red-500/20 hover:bg-red-500/30 text-red-300 px-2 py-1.5 sm:px-4 sm:py-2 rounded-lg backdrop-blur-sm border border-red-500/30 transition-all duration-300 hover:scale-105 font-medium text-xs sm:text-sm'
             >
               <span className='hidden sm:inline'>Logout</span>
               <svg className='w-4 h-4 sm:hidden' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
@@ -174,11 +175,11 @@ function Home() {
                 )}
               </div>
               
-              <div className='space-y-3 sm:space-y-4 max-w-md'>
-                <h2 className='text-white text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent'>
+              <div className='space-y-3 sm:space-y-4 max-w-md mx-auto px-2'>
+                <h2 className='text-white text-xl sm:text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent'>
                   {userData?.assistantName}
                 </h2>
-                <p className='text-slate-300 text-base sm:text-lg leading-relaxed'>
+                <p className='text-slate-300 text-sm sm:text-base md:text-lg leading-relaxed'>
                   Hi there! I'm your AI assistant ready to help with tasks, answer questions, and control your system.
                 </p>
                 
@@ -188,10 +189,10 @@ function Home() {
                       ? 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 border-green-500/30' 
                       : 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 border-blue-500/30'
                   }`}>
-                    <p className={`text-xs sm:text-sm flex items-center gap-2 justify-center ${
+                    <p className={`text-xs sm:text-sm flex items-center gap-2 justify-center flex-wrap ${
                       isListening ? 'text-green-300' : 'text-blue-300'
                     }`}>
-                      <svg className='w-4 h-4 sm:w-5 sm:h-5' fill='currentColor' viewBox='0 0 24 24'>
+                      <svg className='w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0' fill='currentColor' viewBox='0 0 24 24'>
                         <path d='M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.49 6-3.31 6-6.72h-1.7z'/>
                       </svg>
                       <span className='text-center'>
@@ -209,7 +210,7 @@ function Home() {
                     <button
                       key={suggestion}
                       onClick={() => setMessage(suggestion)}
-                      className='bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 text-white px-3 py-2 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm transition-all duration-300 hover:scale-105'
+                      className='bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 text-white px-3 py-2 rounded-lg text-xs sm:text-sm transition-all duration-300 hover:scale-105 capitalize'
                     >
                       {suggestion}
                     </button>
@@ -223,26 +224,26 @@ function Home() {
                 {chat.role === 'user' ? (
                   /* User Message - Modern Style */
                   <div className='flex justify-end mb-3 sm:mb-4'>
-                    <div className='max-w-[85%] sm:max-w-[75%] group'>
-                      <div className='bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-3 sm:px-6 sm:py-4 rounded-2xl rounded-tr-md shadow-xl'>
-                        <div className='flex items-center gap-2 mb-1.5 sm:mb-2'>
-                          <svg className='w-3 h-3 sm:w-4 sm:h-4 text-blue-200' fill='currentColor' viewBox='0 0 24 24'>
+                    <div className='max-w-[90%] sm:max-w-[85%] md:max-w-[75%] group'>
+                      <div className='bg-gradient-to-r from-blue-500 to-purple-600 text-white px-3 py-2 sm:px-4 sm:py-3 md:px-6 md:py-4 rounded-2xl rounded-tr-md shadow-xl'>
+                        <div className='flex items-center gap-1.5 sm:gap-2 mb-1 sm:mb-1.5 md:mb-2'>
+                          <svg className='w-3 h-3 sm:w-4 sm:h-4 text-blue-200 flex-shrink-0' fill='currentColor' viewBox='0 0 24 24'>
                             <path d='M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.49 6-3.31 6-6.72h-1.7z'/>
                           </svg>
                           <span className='text-xs text-blue-200'>
                             {chat.timestamp ? new Date(chat.timestamp).toLocaleTimeString() : new Date().toLocaleTimeString()}
                           </span>
                         </div>
-                        <p className='text-sm sm:text-base leading-relaxed break-words'>{chat.content}</p>
+                        <p className='text-xs sm:text-sm md:text-base leading-relaxed break-words'>{chat.content}</p>
                       </div>
                     </div>
                   </div>
                 ) : (
                   /* AI Response */
                   <div className='flex justify-start mb-4 sm:mb-6'>
-                    <div className='max-w-[85%] sm:max-w-[70%] md:max-w-[60%] px-4 py-3 sm:px-6 sm:py-4 rounded-3xl bg-gradient-to-r from-slate-800/90 via-purple-800/90 to-slate-800/90 border border-purple-400/30 text-white backdrop-blur-xl shadow-2xl'>
+                    <div className='max-w-[90%] sm:max-w-[85%] md:max-w-[70%] lg:max-w-[60%] px-3 py-2 sm:px-4 sm:py-3 md:px-6 md:py-4 rounded-3xl bg-gradient-to-r from-slate-800/90 via-purple-800/90 to-slate-800/90 border border-purple-400/30 text-white backdrop-blur-xl shadow-2xl'>
                       <div className='flex items-start gap-2 sm:gap-3'>
-                        <div className='w-7 h-7 sm:w-9 sm:h-9 rounded-full overflow-hidden border-2 border-purple-400/50 flex-shrink-0 shadow-lg'>
+                        <div className='w-6 h-6 sm:w-7 sm:h-7 md:w-9 md:h-9 rounded-full overflow-hidden border-2 border-purple-400/50 flex-shrink-0 shadow-lg'>
                           <img 
                             src={userData.assistantImage} 
                             alt={userData.assistantName} 
@@ -313,23 +314,25 @@ function Home() {
         </div>
 
         {/* Message Input - Responsive */}
-        <div className={`bg-gradient-to-r from-slate-800/80 via-purple-800/60 to-slate-800/80 backdrop-blur-xl border-2 rounded-2xl sm:rounded-3xl p-3 sm:p-4 md:p-5 transition-all duration-300 shadow-2xl ${
+        <div className={`bg-gradient-to-r from-slate-800/80 via-purple-800/60 to-slate-800/80 backdrop-blur-xl border-2 rounded-2xl p-2 sm:p-3 md:p-4 lg:p-5 transition-all duration-300 shadow-2xl ${
           isListening ? 'border-emerald-400/70 shadow-emerald-500/25 shadow-2xl' : 'border-purple-400/40'
         }`}>
           {/* Voice Recognition Status */}
           {isListening && (
-            <div className='flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3 px-2 sm:px-3 py-1.5 sm:py-2 bg-emerald-500/20 border border-emerald-400/50 rounded-xl sm:rounded-2xl backdrop-blur-sm'>
-              <div className='flex items-center gap-2'>
-                <div className='relative'>
+            <div className='flex items-center gap-2 mb-2 px-2 sm:px-3 py-1.5 sm:py-2 bg-emerald-500/20 border border-emerald-400/50 rounded-xl backdrop-blur-sm'>
+              <div className='flex items-center gap-1.5 sm:gap-2 flex-1 min-w-0'>
+                <div className='relative flex-shrink-0'>
                   <div className='w-2.5 h-2.5 sm:w-3 sm:h-3 bg-emerald-400 rounded-full animate-pulse'></div>
                   <div className='absolute inset-0 bg-emerald-400 rounded-full animate-ping opacity-20'></div>
                 </div>
-                <span className='text-emerald-300 text-xs sm:text-sm font-medium'>🎤 Listening for "{userData?.assistantName}"...</span>
+                <span className='text-emerald-300 text-xs sm:text-sm font-medium truncate'>
+                  🎤 Listening for "{userData?.assistantName}"...
+                </span>
               </div>
             </div>
           )}
           
-          <div className='flex gap-2 sm:gap-4 items-end'>
+          <div className='flex gap-1.5 sm:gap-2 md:gap-4 items-end'>
             <textarea
               value={message}
               onChange={(e) => setMessage(e.target.value)}
@@ -340,7 +343,7 @@ function Home() {
               }
               disabled={isTyping || isProcessing}
               className='flex-1 bg-transparent text-white placeholder-gray-300 resize-none outline-none 
-              min-h-[40px] sm:min-h-[44px] max-h-28 sm:max-h-32 py-2 sm:py-3 px-1 text-sm sm:text-base disabled:opacity-50 leading-relaxed'
+              min-h-[40px] sm:min-h-[44px] max-h-24 sm:max-h-28 md:max-h-32 py-2 sm:py-3 px-1 text-sm sm:text-base disabled:opacity-50 leading-relaxed'
               rows={1}
             />
             
@@ -348,7 +351,7 @@ function Home() {
             {speechSupported && (
               <button
                 onClick={toggleListening}
-                className={`p-2.5 sm:p-3 md:p-4 rounded-xl sm:rounded-2xl transition-all duration-300 transform hover:scale-105 active:scale-95 backdrop-blur-sm border shadow-lg ${
+                className={`p-2 sm:p-2.5 md:p-3 lg:p-4 rounded-xl transition-all duration-300 transform hover:scale-105 active:scale-95 backdrop-blur-sm border shadow-lg flex-shrink-0 ${
                   isListening 
                     ? 'bg-emerald-500/90 hover:bg-emerald-600/90 text-white border-emerald-400/50 shadow-emerald-500/50' 
                     : 'bg-gray-600/80 hover:bg-gray-500/80 text-gray-200 border-gray-500/50 shadow-gray-600/30'
@@ -367,8 +370,8 @@ function Home() {
               disabled={!message.trim() || isTyping || isProcessing}
               className='bg-gradient-to-r from-blue-600/90 to-purple-600/90 hover:from-blue-700/90 hover:to-purple-700/90 
               disabled:from-gray-600/70 disabled:to-gray-700/70 disabled:cursor-not-allowed backdrop-blur-sm
-              text-white p-2.5 sm:p-3 md:p-4 rounded-xl sm:rounded-2xl transition-all duration-300 transform hover:scale-105 active:scale-95 
-              shadow-lg border border-blue-400/50 disabled:border-gray-500/50'
+              text-white p-2 sm:p-2.5 md:p-3 lg:p-4 rounded-xl transition-all duration-300 transform hover:scale-105 active:scale-95 
+              shadow-lg border border-blue-400/50 disabled:border-gray-500/50 flex-shrink-0'
             >
               <svg className='w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                 <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M12 19l9 2-9-18-9 18 9-2zm0 0v-8' />

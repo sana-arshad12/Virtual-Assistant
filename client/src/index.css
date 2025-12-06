@@ -1,16 +1,5 @@
 @import "tailwindcss";
 
-/* Prevent zoom on input focus for mobile */
-* {
-  -webkit-tap-highlight-color: transparent;
-}
-
-input,
-textarea,
-select {
-  font-size: 16px !important; /* Prevents iOS zoom on focus */
-}
-
 /* Custom animations for improved UX */
 @keyframes fadeIn {
   from {
@@ -34,6 +23,21 @@ select {
   }
 }
 
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.8);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(0.8);
+    opacity: 1;
+  }
+}
+
 .animate-fadeIn {
   animation: fadeIn 0.5s ease-out;
 }
@@ -42,7 +46,17 @@ select {
   animation: slideUp 0.6s ease-out;
 }
 
-/* Custom scrollbar for chat */
+.animate-pulse-ring {
+  animation: pulse-ring 2s ease-in-out infinite;
+}
+
+/* Custom scrollbar for chat - Better mobile support */
+.chat-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(59, 130, 246, 0.5) rgba(3, 3, 38, 0.3);
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+}
+
 .chat-scroll::-webkit-scrollbar {
   width: 6px;
 }
@@ -61,16 +75,32 @@ select {
   background: rgba(59, 130, 246, 0.7);
 }
 
-/* Mobile-specific styles */
+/* Improve touch targets for mobile */
 @media (max-width: 640px) {
-  /* Prevent horizontal scroll */
-  body {
-    overflow-x: hidden;
+  button, a, input, textarea {
+    -webkit-tap-highlight-color: rgba(59, 130, 246, 0.2);
+    touch-action: manipulation;
   }
   
-  /* Better touch targets */
-  button {
-    min-height: 44px;
-    min-width: 44px;
+  /* Prevent text selection on double-tap */
+  .prevent-select {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
+}
+
+/* Better responsive text wrapping */
+.break-words {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+/* Fix viewport height on mobile browsers */
+@supports (-webkit-touch-callout: none) {
+  .min-h-screen {
+    min-height: -webkit-fill-available;
   }
 }

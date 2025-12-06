@@ -46,10 +46,16 @@ function Customization() {
   }
 
   return (
-    <div className='w-full h-[100vh] bg-gradient-to-t from-[black] to-[#030353] flex justify-center items-center flex-col relative'> 
+    <div className='min-h-screen bg-gradient-to-br from-slate-900 via-indigo-900 to-purple-900 flex justify-center items-center flex-col relative overflow-hidden py-8 px-4'> 
+      {/* Animated Background Elements */}
+      <div className='absolute inset-0 overflow-hidden pointer-events-none'>
+        <div className='absolute top-20 left-20 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl animate-pulse'></div>
+        <div className='absolute bottom-20 right-20 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl animate-pulse delay-1000'></div>
+      </div>
+
       {/* <Card image={userData?.assistantImage} /> */}
 
-      <div className='w-[90%] max-w-[60%] flex justify-center items-center flex-wrap gap-6 p-6'>
+      <div className='w-full max-w-7xl flex justify-center items-center flex-wrap gap-4 sm:gap-6 p-4 sm:p-6 relative z-10'>
         <Card image={image1} />
         <Card image={image2} />
         <Card image={image3} />
@@ -64,8 +70,8 @@ function Customization() {
         ))}
 
         {/* Upload Card - Always visible */}
-        <div className='relative w-[150px] h-[250px] bg-[#030326] border-2 border-dashed border-[#0000ff66] rounded-2xl overflow-hidden
-          hover:shadow-2xl hover:shadow-blue-950 cursor-pointer hover:border-4 hover:border-blue-950 transition-all duration-300'>
+        <div className='relative w-[120px] h-[180px] sm:w-[150px] sm:h-[250px] bg-white/5 backdrop-blur-md border-2 border-dashed border-white/20 rounded-2xl overflow-hidden
+          hover:shadow-2xl hover:shadow-blue-500/20 cursor-pointer hover:border-white/40 transition-all duration-300'>
           
           <input 
             type="file" 
@@ -89,20 +95,20 @@ function Customization() {
                 d='M12 4v16m8-8H4' 
               />
             </svg>
-            <span className='text-blue-400 text-sm text-center px-2'>Upload Image</span>
+            <span className='text-blue-300 text-xs sm:text-sm text-center px-2'>Upload Image</span>
           </div>
         </div>
       </div>
 
       {/* Next Button - Shows when image is selected */}
       {selectedImage && (
-        <div className='absolute bottom-8 right-8 animate-fadeIn'>
+        <div className='fixed bottom-6 right-6 sm:bottom-8 sm:right-8 z-20 animate-fadeIn'>
           <button 
             onClick={handleNextClick}
-            className='bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 
-            text-white font-semibold py-3 px-8 rounded-lg shadow-lg hover:shadow-xl 
+            className='bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 hover:from-blue-700 hover:via-purple-700 hover:to-pink-700 
+            text-white font-semibold py-2.5 px-6 sm:py-3 sm:px-8 rounded-xl shadow-xl hover:shadow-2xl text-sm sm:text-base
             transition-all duration-300 transform hover:scale-105 active:scale-95
-            flex items-center gap-2 group'
+            flex items-center gap-2 group backdrop-blur-sm'
           >
             <span>Next</span>
             <svg 

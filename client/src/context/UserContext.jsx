@@ -32,9 +32,9 @@ function UserContext({ children }) {
   const [isRecognitionActive, setIsRecognitionActive] = useState(false)
   const [shouldRestart, setShouldRestart] = useState(false) // Start as false, enable manually
   const [serverConnected, setServerConnected] = useState(false)
+  const [selectedPersonality, setSelectedPersonality] = useState('friendly')
+  const [selectedVoice, setSelectedVoice] = useState('female')
   const recognitionRef = useRef(null) // Store recognition instance
-  const restartTimeoutRef = useRef(null) // Store restart timeout
-  const isRestartingRef = useRef(false) // Prevent multiple restarts
 
   // Initialize speech recognition support check
   useEffect(() => {
@@ -65,13 +65,20 @@ function UserContext({ children }) {
     console.log(`🎤 Initializing speech recognition for wake word: "${userData.assistantName}"...`)
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+    
+    if (!SpeechRecognition) {
+      console.error("❌ Speech Recognition API not available")
+      setSpeechSupported(false)
+      return
+    }
+    
     const recognitionInstance = new SpeechRecognition()
     
-    // Configuration
+    // Configuration - optimized for better recognition
     recognitionInstance.continuous = true
     recognitionInstance.interimResults = true
     recognitionInstance.lang = "en-US"
-    recognitionInstance.maxAlternatives = 1
+    recognitionInstance.maxAlternatives = 3
     
     // Store in ref
     recognitionRef.current = recognitionInstance
@@ -84,14 +91,18 @@ function UserContext({ children }) {
 
     recognitionInstance.onresult = (event) => {
       let finalTranscript = ""
+      let interimTranscript = ""
 
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const transcript = event.results[i][0].transcript
         if (event.results[i].isFinal) {
           finalTranscript += transcript + " "
+        } else {
+          interimTranscript += transcript
         }
       }
 
+      // Process final results
       if (finalTranscript.trim()) {
         const lowerTranscript = finalTranscript.toLowerCase().trim()
         const wakeWord = userData?.assistantName?.toLowerCase() || "assistant"
@@ -115,6 +126,11 @@ function UserContext({ children }) {
           }
         }
       }
+      
+      // Log interim results for debugging
+      if (interimTranscript) {
+        console.log(`👂 Interim: "${interimTranscript}"`)
+      }
     }
 
     recognitionInstance.onerror = (event) => {
@@ -122,30 +138,41 @@ function UserContext({ children }) {
       
       // Handle different error types
       if (event.error === "aborted") {
-        console.log("Speech recognition aborted - normal stop")
+        console.log("Speech recognition stopped")
         setIsListening(false)
-        setIsRecognitionActive(false)
-        isRestartingRef.current = false
         return // Don't restart on manual stop
       }
       
       if (event.error === "not-allowed" || event.error === "service-not-allowed") {
-        console.error("❌ Microphone permission denied")
+        console.error("❌ Microphone permission denied. Please allow microphone access.")
         setShouldRestart(false)
         setIsListening(false)
         setIsRecognitionActive(false)
-        isRestartingRef.current = false
-        alert("Please allow microphone access to use voice commands. Check your browser settings.")
+        speakResponse("Please allow microphone access in your browser settings to use voice commands.")
         return
       }
       
       if (event.error === "no-speech") {
-        console.log("No speech detected, will restart...")
+        console.log("⏸️ No speech detected, continuing to listen...")
+        return // Don't show error, just continue
+      }
+      
+      if (event.error === "audio-capture") {
+        console.error("❌ No microphone found or microphone is already in use")
+        setShouldRestart(false)
+        setIsListening(false)
+        speakResponse("Cannot access microphone. Please check your microphone connection.")
         return
       }
       
-      // For other errors, just log
-      console.log("Error type:", event.error, "- will attempt restart")
+      if (event.error === "network") {
+        console.error("❌ Network error during speech recognition")
+        // Allow restart for network errors
+        return
+      }
+      
+      // For other errors, just log and let onend handle restart
+      console.log("Error type:", event.error)
     }
 
     recognitionInstance.onend = () => {
@@ -153,63 +180,69 @@ function UserContext({ children }) {
       setIsListening(false)
       setIsRecognitionActive(false)
 
-      // Clear any pending restart
-      if (restartTimeoutRef.current) {
-        clearTimeout(restartTimeoutRef.current)
-      }
-
-      // Auto-restart if enabled and not already restarting
-      if (shouldRestart && !isRestartingRef.current) {
-        console.log("🔄 Scheduling restart...")
-        isRestartingRef.current = true
-        
-        restartTimeoutRef.current = setTimeout(() => {
+      // Auto-restart if enabled
+      if (shouldRestart && recognitionRef.current) {
+        console.log("🔄 Restarting speech recognition...")
+        setTimeout(() => {
+          // Double check shouldRestart in case it changed
           if (shouldRestart && recognitionRef.current) {
             try {
               recognitionRef.current.start()
-              console.log("✅ Restarted successfully")
-              isRestartingRef.current = false
+              console.log("✅ Successfully restarted")
             } catch (error) {
               if (error.message.includes("already started")) {
-                console.log("Already active")
+                console.log("⚠️ Already running, skipping restart")
               } else {
-                console.error("Restart failed:", error.message)
+                console.error("❌ Restart failed:", error.message)
+                // Try one more time after a longer delay
+                setTimeout(() => {
+                  if (shouldRestart && recognitionRef.current) {
+                    try {
+                      recognitionRef.current.start()
+                    } catch (retryError) {
+                      console.error("❌ Retry failed:", retryError.message)
+                      setShouldRestart(false) // Give up after retry
+                    }
+                  }
+                }, 1000)
               }
-              isRestartingRef.current = false
             }
-          } else {
-            isRestartingRef.current = false
           }
-        }, 1000)
+        }, 300)
       }
     }
 
-    // Start listening
-    try {
-      recognitionInstance.start()
-      console.log(`✅ Speech recognition started for "${userData.assistantName}"`)
-    } catch (error) {
-      console.error("Failed to start:", error.message)
-      if (error.message.includes("already started")) {
-        console.log("Recognition already running")
+    // Start listening after a short delay to ensure proper initialization
+    const startTimeout = setTimeout(() => {
+      try {
+        recognitionInstance.start()
+        console.log(`✅ Speech recognition started for "${userData.assistantName}"`)
+      } catch (error) {
+        console.error("Failed to start:", error.message)
+        if (error.message.includes("already started")) {
+          console.log("Recognition already running")
+        } else {
+          console.error("Start error - trying again in 1 second")
+          setTimeout(() => {
+            try {
+              if (shouldRestart && recognitionRef.current) {
+                recognitionRef.current.start()
+              }
+            } catch (retryError) {
+              console.error("Retry failed:", retryError.message)
+            }
+          }, 1000)
+        }
       }
-    }
+    }, 100)
 
     // Cleanup
     return () => {
       console.log("🧹 Cleaning up speech recognition...")
-      
-      // Clear any pending restart
-      if (restartTimeoutRef.current) {
-        clearTimeout(restartTimeoutRef.current)
-        restartTimeoutRef.current = null
-      }
-      
-      isRestartingRef.current = false
-      
+      clearTimeout(startTimeout)
       if (recognitionRef.current) {
         try {
-          recognitionRef.current.stop()
+          recognitionRef.current.abort() // Use abort instead of stop for immediate cleanup
           recognitionRef.current = null
         } catch (error) {
           console.log("Cleanup error:", error.message)
@@ -546,22 +579,14 @@ function UserContext({ children }) {
     console.log(newState ? "▶️ Enabling voice recognition..." : "🛑 Disabling voice recognition...")
     setShouldRestart(newState)
     
-    // If turning off, stop immediately and clear timeouts
-    if (!newState) {
-      if (restartTimeoutRef.current) {
-        clearTimeout(restartTimeoutRef.current)
-        restartTimeoutRef.current = null
-      }
-      isRestartingRef.current = false
-      
-      if (recognitionRef.current) {
-        try {
-          recognitionRef.current.stop()
-          setIsListening(false)
-          setIsRecognitionActive(false)
-        } catch (error) {
-          console.log("Stop error:", error.message)
-        }
+    // If turning off, stop immediately
+    if (!newState && recognitionRef.current) {
+      try {
+        recognitionRef.current.stop()
+        setIsListening(false)
+        setIsRecognitionActive(false)
+      } catch (error) {
+        console.log("Stop error:", error.message)
       }
     }
   }
@@ -580,6 +605,10 @@ function UserContext({ children }) {
     shouldRestart,
     serverConnected,
     serverUrl,
+    selectedPersonality,
+    setSelectedPersonality,
+    selectedVoice,
+    setSelectedVoice,
     handleCurrentUser,
     sendMessage,
     analyzeImage,
