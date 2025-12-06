@@ -316,19 +316,37 @@ function UserContext({ children }) {
         return mockResponse
       }
 
-      const formData = new FormData()
-      formData.append("message", message)
-      if (imageFile) {
-        formData.append("image", imageFile)
+      // Prepare request body
+      let requestBody
+      let requestOptions = {
+        method: "POST",
       }
 
-      formData.append("history", JSON.stringify(chatHistory))
-      formData.append("execute", "true") // Enable system command execution
+      if (imageFile) {
+        // Use FormData only when sending images
+        const formData = new FormData()
+        formData.append("message", message)
+        formData.append("image", imageFile)
+        formData.append("messageType", "text")
+        formData.append("history", JSON.stringify(chatHistory))
+        formData.append("execute", "true")
+        requestBody = formData
+      } else {
+        // Use JSON for text-only messages
+        requestOptions.headers = {
+          'Content-Type': 'application/json'
+        }
+        requestBody = JSON.stringify({
+          message: message,
+          messageType: "text",
+          history: chatHistory,
+          execute: true
+        })
+      }
 
-      const response = await authenticatedFetch(`/api/ai/chat`, {
-        method: "POST",
-        body: formData,
-      })
+      requestOptions.body = requestBody
+
+      const response = await authenticatedFetch(`/api/ai/chat`, requestOptions)
 
       if (response.ok) {
         const data = await response.json()

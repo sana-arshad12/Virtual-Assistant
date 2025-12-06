@@ -10,7 +10,25 @@ const execAsync = promisify(exec)
 export const getChatResponse = async (req, res) => {
   try {
     const userId = req.userId || 'test-user' // Allow testing without userId
-    const { message, messageType = 'voice' } = req.body
+    
+    // Handle both JSON and FormData
+    let message, messageType, history, execute
+    
+    if (req.is('multipart/form-data')) {
+      // FormData from multer (with image)
+      message = req.body.message
+      messageType = req.body.messageType || 'text'
+      history = req.body.history ? JSON.parse(req.body.history) : []
+      execute = req.body.execute === 'true' || req.body.execute === true
+      console.log('📦 Received FormData request')
+    } else {
+      // JSON request (text-only)
+      message = req.body.message
+      messageType = req.body.messageType || 'text'
+      history = req.body.history || []
+      execute = req.body.execute
+      console.log('📝 Received JSON request')
+    }
 
     console.log('🤖 AI Chat request from user ID:', userId)
     console.log('Message type:', messageType, 'Message:', message ? message.substring(0, 50) + '...' : 'none')
