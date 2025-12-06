@@ -5,6 +5,8 @@ import { userDataContext } from './context/UserContext.jsx'
 
 import SignIn from './pages/SignIn.jsx'
 import SignUp from './pages/SignUp.jsx'
+import ForgotPassword from './pages/ForgotPassword.jsx'
+import ResetPassword from './pages/ResetPassword.jsx'
 import Customization from './pages/Customization.jsx'
 import Customization2 from './pages/Customization2.jsx'
 import Home from './pages/Home.jsx'
@@ -30,6 +32,8 @@ function App() {
         <Route path="/" element={getHomeElement()} />
         <Route path="/signin" element={!userData ? <SignIn /> : getHomeElement()} />
         <Route path="/signup" element={!userData ? <SignUp /> : getHomeElement()} />
+        <Route path="/forgot-password" element={!userData ? <ForgotPassword /> : getHomeElement()} />
+        <Route path="/reset-password/:token" element={!userData ? <ResetPassword /> : getHomeElement()} />
         <Route path="/customization" element={userData ? <Customization /> : <SignIn />} />
         <Route path="/customization2" element={userData ? <Customization2 /> : <SignIn />} />
         <Route path="/home" element={userData ? <Home /> : <SignIn />} />
