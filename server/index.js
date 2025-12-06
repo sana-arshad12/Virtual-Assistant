@@ -19,8 +19,9 @@ const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:5174", 
   "http://localhost:5175",
-  "https://virtual-assistant-client.vercel.app", // Update this with your actual Vercel frontend URL
-  /\.vercel\.app$/ // Allow all Vercel preview deployments
+  "https://virtual-assistant-client.vercel.app",
+  /^https:\/\/.*\.vercel\.app$/, // Allow all Vercel deployments
+  /^https:\/\/virtual-assistant.*\.vercel\.app$/ // Allow all your Vercel project deployments
 ];
 
 app.use(cors({
@@ -44,6 +45,9 @@ app.use(cors({
     }
   },
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
+  exposedHeaders: ['Set-Cookie'],
   optionsSuccessStatus: 200
 }));
 
