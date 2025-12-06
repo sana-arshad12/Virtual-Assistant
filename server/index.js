@@ -14,9 +14,35 @@ dotenv.config();
 
 const app = express();
 
-// CORS configuration - Add this BEFORE other middlewares
+// CORS configuration - Allow local development and Vercel domains
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:5174", 
+  "http://localhost:5175",
+  "https://virtual-assistant-client.vercel.app", // Update this with your actual Vercel frontend URL
+  /\.vercel\.app$/ // Allow all Vercel preview deployments
+];
+
 app.use(cors({
-  origin: ["http://localhost:5173", "http://localhost:5174", "http://localhost:5175"], // Allow multiple frontend ports
+  origin: function(origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Check if origin is in allowed list or matches Vercel pattern
+    const isAllowed = allowedOrigins.some(allowed => {
+      if (allowed instanceof RegExp) {
+        return allowed.test(origin);
+      }
+      return allowed === origin;
+    });
+    
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      console.log('❌ CORS blocked origin:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   optionsSuccessStatus: 200
 }));

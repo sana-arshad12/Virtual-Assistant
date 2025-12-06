@@ -1,7 +1,15 @@
 // API utility functions with automatic token handling
 
 const getServerUrl = async () => {
-  // Try different ports in order
+  // Use environment variable in production, auto-detect in development
+  const productionUrl = import.meta.env.VITE_API_URL
+  
+  if (productionUrl && import.meta.env.PROD) {
+    console.log('✅ Using production API:', productionUrl)
+    return productionUrl
+  }
+  
+  // Development mode: Try different ports in order
   const portsToTry = ['8000', '8001', '8002', '8003']
   
   for (const port of portsToTry) {
