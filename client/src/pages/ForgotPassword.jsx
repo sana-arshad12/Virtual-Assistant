@@ -8,7 +8,6 @@ function ForgotPassword() {
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState({ type: '', text: '' })
-  const [resetToken, setResetToken] = useState('')
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -35,12 +34,14 @@ function ForgotPassword() {
       if (response.ok) {
         setMessage({ 
           type: 'success', 
-          text: 'Password reset link has been generated. Check the console for the token (in production, this would be sent via email).' 
+          text: 'OTP has been sent to your email. Redirecting...' 
         })
-        // Store token for development purposes
-        setResetToken(data.resetToken)
-        console.log('🔑 Reset Token:', data.resetToken)
-        console.log('🔗 Reset URL:', data.resetUrl)
+        console.log('🔑 OTP (Development Mode):', data.otp)
+        
+        // Redirect to OTP verification page
+        setTimeout(() => {
+          navigate('/verify-otp', { state: { email } })
+        }, 1500)
       } else {
         setMessage({ type: 'error', text: data.message || 'Failed to process request' })
       }
@@ -59,7 +60,7 @@ function ForgotPassword() {
         
         <form onSubmit={handleSubmit} className='w-full flex flex-col gap-[20px]'>
           <p className='text-gray-300 text-sm text-center'>
-            Enter your email address and we'll send you a link to reset your password.
+            Enter your email address and we'll send you a 6-digit OTP to reset your password.
           </p>
 
           {message.text && (
@@ -78,30 +79,12 @@ function ForgotPassword() {
             disabled={loading}
           />
 
-          {resetToken && (
-            <div className='bg-blue-500/20 p-3 rounded'>
-              <p className='text-blue-200 text-sm mb-2'>
-                <strong>Development Mode:</strong> Copy this token and use it on the reset password page:
-              </p>
-              <code className='text-xs text-white bg-black/30 p-2 rounded block break-all'>
-                {resetToken}
-              </code>
-              <button
-                type='button'
-                onClick={() => navigate(`/reset-password/${resetToken}`)}
-                className='mt-3 w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition'
-              >
-                Go to Reset Password Page
-              </button>
-            </div>
-          )}
-
           <button
             type='submit'
             disabled={loading}
             className='w-full p-3 bg-blue-600 text-white rounded font-semibold hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed'
           >
-            {loading ? 'Sending...' : 'Send Reset Link'}
+            {loading ? 'Sending...' : 'Send OTP'}
           </button>
 
           <div className='text-center'>

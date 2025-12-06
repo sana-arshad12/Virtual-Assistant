@@ -113,37 +113,96 @@ export const forgotPassword = async (req, res) => {
       })
     }
 
-    // Generate reset token
-    const resetToken = crypto.randomBytes(32).toString('hex')
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString()
     
-    // Hash token before saving to database
-    const hashedToken = crypto
+    // Hash OTP before saving to database
+    const hashedOTP = crypto
       .createHash('sha256')
-      .update(resetToken)
+      .update(otp)
       .digest('hex')
 
-    // Save hashed token and expiration to user
-    user.resetPasswordToken = hashedToken
-    user.resetPasswordExpires = Date.now() + 3600000 // 1 hour from now
+    // Save hashed OTP and expiration to user
+    user.resetPasswordOTP = hashedOTP
+    user.resetPasswordOTPExpires = Date.now() + 600000 // 10 minutes from now
     await user.save()
 
-    console.log('✅ Password reset token generated for:', email)
+    console.log('✅ Password reset OTP generated for:', email)
+    console.log('🔑 OTP (development mode):', otp)
 
-    // In a real application, you would send this token via email
+    // In a real application, you would send this OTP via email
     // For now, we'll return it in the response (NOT recommended for production)
-    const resetUrl = `http://localhost:5173/reset-password/${resetToken}`
-
     res.status(200).json({
-      message: 'Password reset token generated',
-      resetToken, // In production, send this via email instead
-      resetUrl,
-      expiresIn: '1 hour'
+      message: 'OTP has been sent to your email address',
+      otp, // In production, send this via email instead
+      email: email,
+      expiresIn: '10 minutes'
     })
 
   } catch (error) {
     console.error('❌ Forgot password error:', error)
     res.status(500).json({ 
       message: 'Server error during password reset request' 
+    })
+  }
+}
+
+// Verify OTP for password reset
+export const verifyOTP = async (req, res) => {
+  try {
+    const { email, otp } = req.body
+
+    if (!email || !otp) {
+      return res.status(400).json({ 
+        message: 'Email and OTP are required' 
+      })
+    }
+
+    // Hash the OTP from request to compare with stored hash
+    const hashedOTP = crypto
+      .createHash('sha256')
+      .update(otp)
+      .digest('hex')
+
+    // Find user with valid OTP
+    const user = await User.findOne({
+      email: email,
+      resetPasswordOTP: hashedOTP,
+      resetPasswordOTPExpires: { $gt: Date.now() }
+    })
+
+    if (!user) {
+      return res.status(400).json({ 
+        message: 'Invalid or expired OTP' 
+      })
+    }
+
+    // Generate a temporary reset token for password change
+    const resetToken = crypto.randomBytes(32).toString('hex')
+    const hashedToken = crypto
+      .createHash('sha256')
+      .update(resetToken)
+      .digest('hex')
+
+    // Save reset token and clear OTP
+    user.resetPasswordToken = hashedToken
+    user.resetPasswordExpires = Date.now() + 3600000 // 1 hour
+    user.resetPasswordOTP = undefined
+    user.resetPasswordOTPExpires = undefined
+    await user.save()
+
+    console.log('✅ OTP verified successfully for:', email)
+
+    res.status(200).json({
+      message: 'OTP verified successfully',
+      resetToken, // Token to use for password reset
+      verified: true
+    })
+
+  } catch (error) {
+    console.error('❌ OTP verification error:', error)
+    res.status(500).json({ 
+      message: 'Server error during OTP verification' 
     })
   }
 }

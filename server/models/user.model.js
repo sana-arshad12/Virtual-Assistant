@@ -10,7 +10,9 @@ const userSchema = new mongoose.Schema({
   voicePreference: { type: String, default: "female" },
   history: [{ type: Array }],
   resetPasswordToken: { type: String },
-  resetPasswordExpires: { type: Date }
+  resetPasswordExpires: { type: Date },
+  resetPasswordOTP: { type: String },
+  resetPasswordOTPExpires: { type: Date }
 },{timestamps:true }
 );
 
