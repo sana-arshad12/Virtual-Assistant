@@ -7,6 +7,7 @@ function VerifyOTP() {
   const navigate = useNavigate()
   const location = useLocation()
   const email = location.state?.email || ''
+  const fromSignup = location.state?.fromSignup || false // Check if coming from signup
   const [otp, setOtp] = useState(['', '', '', '', '', ''])
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState({ type: '', text: '' })
@@ -102,11 +103,22 @@ function VerifyOTP() {
           text: 'OTP verified successfully! Redirecting...' 
         })
         
-        // Redirect to reset password page with token
+        // Check if this is from signup or password reset
         setTimeout(() => {
-          navigate(`/reset-password/${data.resetToken}`, {
-            state: { email }
-          })
+          if (fromSignup) {
+            // From signup: redirect to signin page
+            navigate('/signin', {
+              state: { 
+                message: 'Email verified successfully! Please sign in.',
+                email: email
+              }
+            })
+          } else {
+            // From forgot password: redirect to reset password page
+            navigate(`/reset-password/${data.resetToken}`, {
+              state: { email }
+            })
+          }
         }, 1500)
       } else {
         setMessage({ type: 'error', text: data.message || 'Invalid OTP. Please try again.' })
@@ -125,7 +137,9 @@ function VerifyOTP() {
     setOtp(['', '', '', '', '', ''])
 
     try {
-      const response = await api.post('/api/auth/forgot-password', { email })
+      // Use different endpoint based on flow
+      const endpoint = fromSignup ? '/api/auth/resend-otp' : '/api/auth/forgot-password'
+      const response = await api.post(endpoint, { email })
       const data = await response.json()
 
       if (response.ok) {

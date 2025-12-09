@@ -15,6 +15,7 @@ function SignUp() {
     password: ''
   })
   const [errors, setErrors] = useState({})
+  const [message, setMessage] = useState({ type: '', text: '' })
   const [loading, setLoading] = useState(false)
 
   const togglePasswordVisibility = () => {
@@ -91,24 +92,21 @@ function SignUp() {
       
       if (response.ok) {
         console.log('✅ Registration successful:', data)
+        console.log('📧 OTP sent to:', formData.email)
         
-        // Save token to localStorage
-        if (data.token) {
-          localStorage.setItem('token', data.token)
-        }
+        // Show success message
+        setErrors({ general: '' })
+        setMessage({ type: 'success', text: 'Registration successful! Please check your email for OTP.' })
         
-        // Update user data in context
-        if (setUserData && data.user) {
-          setUserData(data.user)
-        }
-
-        // Update server connection status
-        if (updateServerConnection) {
-          updateServerConnection(true)
-        }
-        
-        // Navigate to customization page for new users
-        navigate('/customization')
+        // Redirect to OTP verification page
+        setTimeout(() => {
+          navigate('/verify-otp', {
+            state: { 
+              email: formData.email,
+              fromSignup: true // Flag to indicate this is from signup
+            }
+          })
+        }, 2000)
       } else {
         console.log('❌ Registration failed:', data.message)
         setErrors({ general: data.message || 'Registration failed' })
@@ -126,8 +124,15 @@ function SignUp() {
       <form onSubmit={handleSubmit} className='w-[90%] h-[600px] max-w-[500px] bg-[#00000083] backdrop-blur shadow-lg shadow-black flex flex-col items-center justify-center gap-[20px] px-[20px]'>
         <h1 className='text-white text-[30px] font-semibold mb-[30px]'>Register to <span className='text-blue-400'>Virtual Assistant</span></h1>
 
-        {/* General Error Message */}
-        {errors.general && (
+        {/* Success/Error Messages */}
+        {message.text && (
+          <div className={`w-full px-4 py-2 rounded-lg text-sm ${
+            message.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+          }`}>
+            {message.text}
+          </div>
+        )}
+        {errors.general && !message.text && (
           <div className='w-full bg-red-500 text-white px-4 py-2 rounded-lg text-sm'>
             {errors.general}
           </div>

@@ -47,50 +47,88 @@ export const signUp = async (req, res) => {
     console.log('Hashed Password:', hashedPassword)
     console.log('Salt Rounds:', saltRounds)
 
-    // Create user
+    // Generate OTP
+    const otp = crypto.randomInt(100000, 999999).toString()
+    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
+
+    // Create unverified user with OTP
     const user = new User({
       name,
       email,
-      password: hashedPassword
+      password: hashedPassword,
+      isVerified: false, // Mark as unverified
+      otp,
+      otpExpiry
     })
 
     await user.save()
 
-    // Generate JWT token directly (no separate utility file needed)
-    const token = jwt.sign(
-      { userId: user._id }, 
-      process.env.JWT_SECRET || 'your-secret-key', 
-      { expiresIn: '7d' }
-    )
+    // Send OTP email
+    await sendOTPEmail(email, otp)
 
-    console.log('✅ User registered successfully:', {
+    console.log('✅ User created (unverified), OTP sent:', {
       id: user._id,
       name: user.name,
-      email: user.email
-    })
-
-    // Set token as HTTP-only cookie
-    res.cookie('token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+      email: user.email,
+      otp: otp // Development only
     })
 
     res.status(201).json({
-      message: 'User registered successfully',
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email
-      },
-      token
+      message: 'Registration successful! Please verify your email with the OTP sent.',
+      email: email,
+      otp: process.env.NODE_ENV === 'development' ? otp : undefined // Show OTP in development
     })
 
   } catch (error) {
-    console.error('❌ Login error:', error)
+    console.error('❌ Signup error:', error)
     res.status(500).json({ 
-      message: 'Server error during login' 
+      message: 'Server error during registration' 
+    })
+  }
+}
+
+// Resend OTP for signup verification
+export const resendOTP = async (req, res) => {
+  try {
+    const { email } = req.body
+
+    if (!email) {
+      return res.status(400).json({ 
+        message: 'Email is required' 
+      })
+    }
+
+    // Find unverified user
+    const user = await User.findOne({ email, isVerified: false })
+
+    if (!user) {
+      return res.status(400).json({ 
+        message: 'No unverified account found with this email' 
+      })
+    }
+
+    // Generate new OTP
+    const otp = crypto.randomInt(100000, 999999).toString()
+    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
+
+    user.otp = otp
+    user.otpExpiry = otpExpiry
+    await user.save()
+
+    // Send OTP email
+    await sendOTPEmail(email, otp)
+
+    console.log('✅ OTP resent to:', email, 'OTP:', otp)
+
+    res.status(200).json({
+      message: 'New OTP has been sent to your email',
+      otp: process.env.NODE_ENV === 'development' ? otp : undefined // Show OTP in development
+    })
+
+  } catch (error) {
+    console.error('❌ Resend OTP error:', error)
+    res.status(500).json({ 
+      message: 'Server error during OTP resend' 
     })
   }
 }
@@ -161,7 +199,7 @@ export const forgotPassword = async (req, res) => {
   }
 }
 
-// Verify OTP for password reset
+// Verify OTP for signup or password reset
 export const verifyOTP = async (req, res) => {
   try {
     const { email, otp } = req.body
@@ -172,17 +210,19 @@ export const verifyOTP = async (req, res) => {
       })
     }
 
-    // Hash the OTP from request to compare with stored hash
-    const hashedOTP = crypto
-      .createHash('sha256')
-      .update(otp)
-      .digest('hex')
-
-    // Find user with valid OTP
+    // Find user with valid OTP (check both signup OTP and reset OTP)
     const user = await User.findOne({
       email: email,
-      resetPasswordOTP: hashedOTP,
-      resetPasswordOTPExpires: { $gt: Date.now() }
+      $or: [
+        { // Signup OTP (plain text)
+          otp: otp,
+          otpExpiry: { $gt: Date.now() }
+        },
+        { // Password reset OTP (hashed)
+          resetPasswordOTP: crypto.createHash('sha256').update(otp).digest('hex'),
+          resetPasswordOTPExpires: { $gt: Date.now() }
+        }
+      ]
     })
 
     if (!user) {
@@ -191,6 +231,24 @@ export const verifyOTP = async (req, res) => {
       })
     }
 
+    // Check if this is signup verification
+    if (user.otp && user.otp === otp && !user.isVerified) {
+      // Signup verification
+      user.isVerified = true
+      user.otp = undefined
+      user.otpExpiry = undefined
+      await user.save()
+
+      console.log('✅ Signup OTP verified for:', email)
+
+      return res.status(200).json({
+        message: 'Email verified successfully! You can now sign in.',
+        verified: true,
+        isSignupVerification: true
+      })
+    }
+
+    // Otherwise, it's password reset verification
     // Generate a temporary reset token for password change
     const resetToken = crypto.randomBytes(32).toString('hex')
     const hashedToken = crypto
@@ -205,12 +263,13 @@ export const verifyOTP = async (req, res) => {
     user.resetPasswordOTPExpires = undefined
     await user.save()
 
-    console.log('✅ OTP verified successfully for:', email)
+    console.log('✅ Password reset OTP verified for:', email)
 
     res.status(200).json({
       message: 'OTP verified successfully',
       resetToken, // Token to use for password reset
-      verified: true
+      verified: true,
+      isPasswordReset: true
     })
 
   } catch (error) {
@@ -300,6 +359,14 @@ export const login = async (req, res) => {
     if (!user) {
       return res.status(400).json({ 
         message: 'Invalid email or password' 
+      })
+    }
+
+    // Check if user is verified
+    if (!user.isVerified) {
+      return res.status(403).json({ 
+        message: 'Please verify your email before signing in',
+        requiresVerification: true
       })
     }
 

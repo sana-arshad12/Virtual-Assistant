@@ -1,21 +1,32 @@
-import React, { useState, useContext } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import React, { useState, useContext, useEffect } from 'react'
+import { useNavigate, Link, useLocation } from 'react-router-dom'
 import { userDataContext } from '../context/UserContext.jsx'
 import { authenticatedFetch } from '../utils/api.js'
 import bg from '../assets/authBg.png'
 
 function SignIn() {
   const navigate = useNavigate()
+  const location = useLocation()
   const contextValue = useContext(userDataContext)
   const { setUserData, serverUrl, updateServerConnection } = contextValue || {}
   
   const [showPassword, setShowPassword] = useState(false)
   const [formData, setFormData] = useState({
-    email: '',
+    email: location.state?.email || '',
     password: ''
   })
   const [errors, setErrors] = useState({})
+  const [message, setMessage] = useState({ type: '', text: '' })
   const [loading, setLoading] = useState(false)
+
+  // Show success message from OTP verification if present
+  useEffect(() => {
+    if (location.state?.message) {
+      setMessage({ type: 'success', text: location.state.message })
+      // Clear the location state
+      window.history.replaceState({}, document.title)
+    }
+  }, [location])
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword)
@@ -103,7 +114,24 @@ function SignIn() {
         }
       } else {
         console.log('❌ Login failed:', data.message)
-        setErrors({ general: data.message || 'Login failed' })
+        
+        // Check if user needs to verify email
+        if (data.requiresVerification) {
+          setErrors({ 
+            general: data.message + ' Redirecting to verification...' 
+          })
+          // Redirect to OTP verification after 2 seconds
+          setTimeout(() => {
+            navigate('/verify-otp', {
+              state: { 
+                email: formData.email,
+                fromSignup: true
+              }
+            })
+          }, 2000)
+        } else {
+          setErrors({ general: data.message || 'Login failed' })
+        }
       }
     } catch (error) {
       console.error('❌ Network error:', error)
@@ -118,8 +146,15 @@ function SignIn() {
       <form onSubmit={handleSubmit} className='w-[90%] h-[500px] max-w-[500px] bg-[#00000083] backdrop-blur shadow-lg shadow-black flex flex-col items-center justify-center gap-[20px] px-[20px]'>
         <h1 className='text-white text-[30px] font-semibold mb-[30px]'>Sign In to <span className='text-blue-400'>Virtual Assistant</span></h1>
 
-        {/* General Error Message */}
-        {errors.general && (
+        {/* Success/Error Messages */}
+        {message.text && (
+          <div className={`w-full px-4 py-2 rounded-lg text-sm ${
+            message.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+          }`}>
+            {message.text}
+          </div>
+        )}
+        {errors.general && !message.text && (
           <div className='w-full bg-red-500 text-white px-4 py-2 rounded-lg text-sm'>
             {errors.general}
           </div>

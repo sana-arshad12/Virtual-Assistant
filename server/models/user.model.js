@@ -9,6 +9,9 @@ const userSchema = new mongoose.Schema({
   personality: { type: String, default: "friendly" },
   voicePreference: { type: String, default: "female" },
   history: [{ type: Array }],
+  isVerified: { type: Boolean, default: false }, // Email verification status
+  otp: { type: String }, // OTP for signup verification
+  otpExpiry: { type: Date }, // OTP expiration time
   resetPasswordToken: { type: String },
   resetPasswordExpires: { type: Date },
   resetPasswordOTP: { type: String },
