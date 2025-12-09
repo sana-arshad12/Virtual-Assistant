@@ -8,10 +8,19 @@ function VerifyOTP() {
   const location = useLocation()
   const email = location.state?.email || ''
   const fromSignup = location.state?.fromSignup || false // Check if coming from signup
+  const devOtp = location.state?.otp || '' // OTP from signup for development
   const [otp, setOtp] = useState(['', '', '', '', '', ''])
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState({ type: '', text: '' })
   const [timeLeft, setTimeLeft] = useState(600) // 10 minutes in seconds
+
+  // Show OTP hint in development
+  React.useEffect(() => {
+    if (devOtp) {
+      console.log('🔑 Development OTP:', devOtp)
+      setMessage({ type: 'info', text: `Development Mode - OTP: ${devOtp}` })
+    }
+  }, [devOtp])
 
   // Countdown timer
   useEffect(() => {
@@ -143,9 +152,10 @@ function VerifyOTP() {
       const data = await response.json()
 
       if (response.ok) {
+        const otpHint = data.otp ? ` (OTP: ${data.otp})` : '';
         setMessage({ 
           type: 'success', 
-          text: 'New OTP has been sent to your email!' 
+          text: `New OTP has been sent to your email!${otpHint}` 
         })
         setTimeLeft(600) // Reset timer
         console.log('🔑 New OTP:', data.otp) // Development only
@@ -172,7 +182,13 @@ function VerifyOTP() {
 
         <form onSubmit={handleSubmit} className='w-full flex flex-col gap-[20px]'>
           {message.text && (
-            <div className={`p-3 rounded ${message.type === 'error' ? 'bg-red-500/20 text-red-200' : 'bg-green-500/20 text-green-200'}`}>
+            <div className={`p-3 rounded ${
+              message.type === 'error' 
+                ? 'bg-red-500/20 text-red-200 border border-red-500' 
+                : message.type === 'info'
+                ? 'bg-blue-500/20 text-blue-200 border border-blue-500'
+                : 'bg-green-500/20 text-green-200 border border-green-500'
+            }`}>
               {message.text}
             </div>
           )}

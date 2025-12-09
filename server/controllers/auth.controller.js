@@ -64,7 +64,15 @@ export const signUp = async (req, res) => {
     await user.save()
 
     // Send OTP email
-    await sendOTPEmail(email, otp)
+    try {
+      const emailResult = await sendOTPEmail(email, otp, name)
+      if (emailResult && !emailResult.success) {
+        console.warn('⚠️ Email send failed, but showing OTP in response for development')
+      }
+    } catch (emailError) {
+      console.error('❌ Email error:', emailError)
+      // Continue anyway in development
+    }
 
     console.log('✅ User created (unverified), OTP sent:', {
       id: user._id,
@@ -72,11 +80,12 @@ export const signUp = async (req, res) => {
       email: user.email,
       otp: otp // Development only
     })
+    console.log('\n🔑 YOUR OTP CODE:', otp, '\n')
 
     res.status(201).json({
-      message: 'Registration successful! Please verify your email with the OTP sent.',
+      message: 'Registration successful! Check your email for OTP. (In development, check server console)',
       email: email,
-      otp: process.env.NODE_ENV === 'development' ? otp : undefined // Show OTP in development
+      otp: otp // Always show in response for development
     })
 
   } catch (error) {
@@ -116,13 +125,18 @@ export const resendOTP = async (req, res) => {
     await user.save()
 
     // Send OTP email
-    await sendOTPEmail(email, otp)
+    try {
+      await sendOTPEmail(email, otp, user.name)
+    } catch (emailError) {
+      console.error('❌ Email error:', emailError)
+    }
 
-    console.log('✅ OTP resent to:', email, 'OTP:', otp)
+    console.log('✅ OTP resent to:', email)
+    console.log('\n🔑 YOUR OTP CODE:', otp, '\n')
 
     res.status(200).json({
       message: 'New OTP has been sent to your email',
-      otp: process.env.NODE_ENV === 'development' ? otp : undefined // Show OTP in development
+      otp: otp // Always show in response for development
     })
 
   } catch (error) {

@@ -93,20 +93,28 @@ function SignUp() {
       if (response.ok) {
         console.log('✅ Registration successful:', data)
         console.log('📧 OTP sent to:', formData.email)
+        if (data.otp) {
+          console.log('🔑 YOUR OTP:', data.otp)
+        }
         
-        // Show success message
+        // Show success message with OTP if available
         setErrors({ general: '' })
-        setMessage({ type: 'success', text: 'Registration successful! Please check your email for OTP.' })
+        const otpMessage = data.otp ? ` Your OTP: ${data.otp}` : '';
+        setMessage({ 
+          type: 'success', 
+          text: `Registration successful! Please check your email for OTP.${otpMessage}` 
+        })
         
         // Redirect to OTP verification page
         setTimeout(() => {
           navigate('/verify-otp', {
             state: { 
               email: formData.email,
-              fromSignup: true // Flag to indicate this is from signup
+              fromSignup: true, // Flag to indicate this is from signup
+              otp: data.otp // Pass OTP for development
             }
           })
-        }, 2000)
+        }, 3000)
       } else {
         console.log('❌ Registration failed:', data.message)
         setErrors({ general: data.message || 'Registration failed' })
