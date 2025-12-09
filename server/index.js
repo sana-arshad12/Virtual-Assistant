@@ -46,14 +46,12 @@ app.options('*', (req, res) => {
   res.sendStatus(200);
 });
 
-});
-
 // Health route
 app.get("/health", (req, res) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Credentials', 'true');
   console.log('💚 Health check requested');
-  res.json({ status: "ok", port: process.env.PORT || 'unknown', timestamp: new Date.toISOString() });
+  res.json({ status: "ok", port: process.env.PORT || 'unknown', timestamp: new Date().toISOString() });
 });
 
 // Add request logging middleware
@@ -133,18 +131,7 @@ const basePort = parseInt(process.env.PORT, 10) || 8000;
 // Check if running on Vercel
 const isVercel = process.env.VERCEL || process.env.VERCEL_ENV;
 
-if (isVercel) {
-  // Vercel serverless mode - export app for serverless functions
-  console.log('🌐 Running in Vercel serverless mode');
-  
-  // Connect to database
-  connectDB().catch(err => {
-    console.error('MongoDB connection failed:', err.message);
-  });
-  
-  // Export for Vercel
-  export default app;
-} else {
+if (!isVercel) {
   // Local development mode
   const startServer = (portToTry, attempt = 1, maxAttempts = 10) => {
     const server = app.listen(portToTry, () => {
@@ -192,4 +179,13 @@ if (isVercel) {
       process.exit(1);
     }
   })();
+} else {
+  // Vercel serverless mode - just connect to database
+  console.log('🌐 Running in Vercel serverless mode');
+  connectDB().catch(err => {
+    console.error('MongoDB connection failed:', err.message);
+  });
 }
+
+// Export for Vercel (this will be used only when deployed to Vercel)
+export default app;
