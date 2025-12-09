@@ -11,7 +11,7 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
 const testAPIKey = async () => {
     try {
         console.log('🔑 Testing API Key:', process.env.GEMINI_API_KEY?.substring(0, 20) + '...')
-        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" })
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
         await model.generateContent("test")
         console.log('✅ Gemini API key is valid')
     } catch (error) {
@@ -70,7 +70,7 @@ Remember: You are not just answering questions - you are a comprehensive digital
 // Get model with system prompt
 export const getAIModel = () => {
     const model = genAI.getGenerativeModel({ 
-        model: "gemini-2.5-flash",
+        model: "gemini-1.5-flash",
         systemInstruction: SYSTEM_PROMPT
     })
     return model
