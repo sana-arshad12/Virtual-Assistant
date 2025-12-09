@@ -14,43 +14,24 @@ dotenv.config();
 
 const app = express();
 
-// Parse JSON FIRST (before CORS)
-app.use(express.json());
-app.use(cookieParser());
-
-// CORS Configuration - Must be after body parsing
-const corsOptions = {
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl)
-    if (!origin) return callback(null, true);
-    
-    // Allow all origins in development and production
-    callback(null, true);
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'X-Requested-With', 'Accept', 'Origin', 'X-Api-Version', 'X-CSRF-Token'],
-  exposedHeaders: ['Set-Cookie'],
-  optionsSuccessStatus: 200,
-  preflightContinue: false,
-  maxAge: 86400 // 24 hours
-};
-
-app.use(cors(corsOptions));
-
-// Global CORS middleware - add headers to all responses
+// Handle OPTIONS preflight BEFORE everything else
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie, X-Requested-With, Accept, Origin');
+  // Set CORS headers for all requests
+  res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie, X-Requested-With, Accept, Origin');
   
   // Handle preflight
   if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
+    return res.status(200).end();
   }
   next();
 });
+
+// Parse JSON
+app.use(express.json());
+app.use(cookieParser());
 
 // Health route
 app.get("/health", (req, res) => {
