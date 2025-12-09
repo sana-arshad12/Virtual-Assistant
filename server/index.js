@@ -14,50 +14,22 @@ dotenv.config();
 
 const app = express();
 
-// Handle preflight requests FIRST (before any other middleware)
-app.use((req, res, next) => {
-  const origin = req.headers.origin || '*';
-  res.header('Access-Control-Allow-Origin', origin);
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie, X-Requested-With, Accept, X-CSRF-Token, X-Requested-With, Accept-Version, Content-Length, Content-MD5, Date, X-Api-Version');
-  res.header('Access-Control-Expose-Headers', 'Set-Cookie');
-  
-  // Handle preflight
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
-  }
-  
-  next();
-});
+// CORS Configuration - MUST be first
+app.use(cors({
+  origin: true, // Allow all origins with credentials
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'X-Requested-With', 'Accept'],
+  exposedHeaders: ['Set-Cookie'],
+  maxAge: 86400 // 24 hours
+}));
 
-// Parse JSON after CORS headers are set
+// Parse JSON and cookies
 app.use(express.json());
 app.use(cookieParser());
 
-// CORS Configuration
-const corsOptions = {
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl)
-    if (!origin) return callback(null, true);
-    
-    // Allow all origins in development and production
-    callback(null, true);
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'X-Requested-With', 'Accept', 'X-CSRF-Token', 'Accept-Version', 'Content-Length', 'Content-MD5', 'Date', 'X-Api-Version'],
-  exposedHeaders: ['Set-Cookie'],
-  optionsSuccessStatus: 200,
-  preflightContinue: false
-};
-
-app.use(cors(corsOptions));
-
 // Health route
 app.get("/health", (req, res) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Credentials', 'true');
   console.log('💚 Health check requested');
   res.json({ status: "ok", port: process.env.PORT || 'unknown', timestamp: new Date().toISOString() });
 });
