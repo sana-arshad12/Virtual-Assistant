@@ -81,8 +81,8 @@ function SignIn() {
 
     try {
       // Use api utility with automatic token handling  
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/signin`, {
-        method: 'POST', 
+      const response = await authenticatedFetch(`/api/auth/signin`  , {
+        method: 'POST',
         body: JSON.stringify(formData)
       })
 

@@ -79,7 +79,7 @@ function SignUp() {
 
     try {
       // API call to your backend - Using dynamic server URL from context
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/signup`, {
+      const response = await fetch(`${serverUrl}/api/auth/signup`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
