@@ -14,44 +14,42 @@ dotenv.config();
 
 const app = express();
 
-// CORS Configuration - MUST be first
-const allowedOrigins = [
-  'https://virtual-assistant-m4wu.vercel.app',
-  'http://localhost:5173',
-  'http://localhost:5174',
-  'http://localhost:3000'
-];
+// Parse JSON FIRST (before CORS)
+app.use(express.json());
+app.use(cookieParser());
 
-app.use(cors({
+// CORS Configuration - Must be after body parsing
+const corsOptions = {
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps, curl, Postman)
+    // Allow requests with no origin (like mobile apps or curl)
     if (!origin) return callback(null, true);
     
-    // Allow all Vercel preview deployments
-    if (origin.includes('.vercel.app') || allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-    
-    // Allow localhost for development
-    if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
-      return callback(null, true);
-    }
-    
-    callback(null, false);
+    // Allow all origins in development and production
+    callback(null, true);
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'X-Requested-With', 'Accept'],
   exposedHeaders: ['Set-Cookie'],
-  optionsSuccessStatus: 200
-}));
+  optionsSuccessStatus: 200,
+  preflightContinue: false
+};
 
-// Parse JSON and cookies
-app.use(express.json());
-app.use(cookieParser());
+app.use(cors(corsOptions));
+
+// Handle preflight requests explicitly
+app.options('*', (req, res) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie, X-Requested-With, Accept');
+  res.sendStatus(200);
+});
 
 // Health route
 app.get("/health", (req, res) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Credentials', 'true');
   console.log('💚 Health check requested');
   res.json({ status: "ok", port: process.env.PORT || 'unknown', timestamp: new Date().toISOString() });
 });
