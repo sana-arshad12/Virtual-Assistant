@@ -37,12 +37,17 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-// Handle preflight requests explicitly
-app.options('*', (req, res) => {
+// Add CORS headers to all responses (redundant but ensures headers are always present)
+app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
   res.header('Access-Control-Allow-Credentials', 'true');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie, X-Requested-With, Accept');
+  next();
+});
+
+// Handle preflight requests explicitly
+app.options('*', (req, res) => {
   res.sendStatus(200);
 });
 
