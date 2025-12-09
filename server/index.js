@@ -29,21 +29,27 @@ const corsOptions = {
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'X-Requested-With', 'Accept'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'X-Requested-With', 'Accept', 'Origin', 'X-Api-Version', 'X-CSRF-Token'],
   exposedHeaders: ['Set-Cookie'],
   optionsSuccessStatus: 200,
-  preflightContinue: false
+  preflightContinue: false,
+  maxAge: 86400 // 24 hours
 };
 
 app.use(cors(corsOptions));
 
-// Handle preflight requests explicitly
-app.options('*', (req, res) => {
+// Global CORS middleware - add headers to all responses
+app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
   res.header('Access-Control-Allow-Credentials', 'true');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie, X-Requested-With, Accept');
-  res.sendStatus(200);
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie, X-Requested-With, Accept, Origin');
+  
+  // Handle preflight
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
 });
 
 // Health route
