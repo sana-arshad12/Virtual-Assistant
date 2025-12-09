@@ -9,8 +9,16 @@ const getServerUrl = async () => {
     return envUrl
   }
   
-  // Auto-detect mode: Try different ports in order
-  console.log('🔍 Auto-detecting server...')
+  // Check if running in production (Vercel)
+  if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    // Use the Vercel backend URL for production
+    const productionUrl = 'https://virtual-assistant-main-server.vercel.app'
+    console.log('✅ Production mode, using:', productionUrl)
+    return productionUrl
+  }
+  
+  // Auto-detect mode for local development: Try different ports in order
+  console.log('🔍 Auto-detecting local server...')
   const portsToTry = ['8000', '8001', '8002', '8003']
   
   for (const port of portsToTry) {
