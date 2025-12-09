@@ -33,8 +33,43 @@ export const signUp = async (req, res) => {
     // Check if user already exists
     const existingUser = await User.findOne({ email })
     if (existingUser) {
+      // If user exists but is not verified, allow re-registration (update OTP)
+      if (!existingUser.isVerified) {
+        // Generate new OTP
+        const otp = crypto.randomInt(100000, 999999).toString()
+        const otpExpiry = new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
+        
+        // Update password and OTP
+        const saltRounds = 12
+        const hashedPassword = await bcrypt.hash(password, saltRounds)
+        
+        existingUser.name = name
+        existingUser.password = hashedPassword
+        existingUser.otp = otp
+        existingUser.otpExpiry = otpExpiry
+        await existingUser.save()
+        
+        // Send OTP email
+        try {
+          const emailResult = await sendOTPEmail(email, otp, name)
+          if (emailResult && !emailResult.success) {
+            console.warn('⚠️ Email send failed, but showing OTP in console')
+          }
+        } catch (emailError) {
+          console.error('❌ Email error:', emailError)
+        }
+        
+        console.log('✅ Unverified user updated, new OTP sent:', email)
+        console.log('\n🔑 YOUR OTP CODE:', otp, '\n')
+        
+        return res.status(200).json({
+          message: 'Account exists but not verified. New OTP sent to your email.',
+          email: email
+        })
+      }
+      
       return res.status(400).json({ 
-        message: 'User with this email already exists' 
+        message: 'User with this email already exists and is verified. Please sign in.' 
       })
     }
 
@@ -77,15 +112,13 @@ export const signUp = async (req, res) => {
     console.log('✅ User created (unverified), OTP sent:', {
       id: user._id,
       name: user.name,
-      email: user.email,
-      otp: otp // Development only
+      email: user.email
     })
     console.log('\n🔑 YOUR OTP CODE:', otp, '\n')
 
     res.status(201).json({
       message: 'Registration successful! Check your email for OTP. (In development, check server console)',
-      email: email,
-      otp: otp // Always show in response for development
+      email: email
     })
 
   } catch (error) {
@@ -135,8 +168,7 @@ export const resendOTP = async (req, res) => {
     console.log('\n🔑 YOUR OTP CODE:', otp, '\n')
 
     res.status(200).json({
-      message: 'New OTP has been sent to your email',
-      otp: otp // Always show in response for development
+      message: 'New OTP has been sent to your email'
     })
 
   } catch (error) {

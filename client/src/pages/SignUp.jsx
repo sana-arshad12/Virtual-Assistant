@@ -93,16 +93,12 @@ function SignUp() {
       if (response.ok) {
         console.log('✅ Registration successful:', data)
         console.log('📧 OTP sent to:', formData.email)
-        if (data.otp) {
-          console.log('🔑 YOUR OTP:', data.otp)
-        }
         
-        // Show success message with OTP if available
+        // Show success message
         setErrors({ general: '' })
-        const otpMessage = data.otp ? ` Your OTP: ${data.otp}` : '';
         setMessage({ 
           type: 'success', 
-          text: `Registration successful! Please check your email for OTP.${otpMessage}` 
+          text: 'Registration successful! Please check your email for OTP. (Check server console in development)' 
         })
         
         // Redirect to OTP verification page
@@ -110,8 +106,7 @@ function SignUp() {
           navigate('/verify-otp', {
             state: { 
               email: formData.email,
-              fromSignup: true, // Flag to indicate this is from signup
-              otp: data.otp // Pass OTP for development
+              fromSignup: true // Flag to indicate this is from signup
             }
           })
         }, 3000)

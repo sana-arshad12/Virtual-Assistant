@@ -8,19 +8,10 @@ function VerifyOTP() {
   const location = useLocation()
   const email = location.state?.email || ''
   const fromSignup = location.state?.fromSignup || false // Check if coming from signup
-  const devOtp = location.state?.otp || '' // OTP from signup for development
   const [otp, setOtp] = useState(['', '', '', '', '', ''])
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState({ type: '', text: '' })
   const [timeLeft, setTimeLeft] = useState(600) // 10 minutes in seconds
-
-  // Show OTP hint in development
-  React.useEffect(() => {
-    if (devOtp) {
-      console.log('🔑 Development OTP:', devOtp)
-      setMessage({ type: 'info', text: `Development Mode - OTP: ${devOtp}` })
-    }
-  }, [devOtp])
 
   // Countdown timer
   useEffect(() => {
@@ -152,13 +143,12 @@ function VerifyOTP() {
       const data = await response.json()
 
       if (response.ok) {
-        const otpHint = data.otp ? ` (OTP: ${data.otp})` : '';
         setMessage({ 
           type: 'success', 
-          text: `New OTP has been sent to your email!${otpHint}` 
+          text: 'New OTP has been sent to your email! (Check server console)' 
         })
         setTimeLeft(600) // Reset timer
-        console.log('🔑 New OTP:', data.otp) // Development only
+        console.log('✅ New OTP sent - check server console')
       } else {
         setMessage({ type: 'error', text: data.message || 'Failed to resend OTP' })
       }
