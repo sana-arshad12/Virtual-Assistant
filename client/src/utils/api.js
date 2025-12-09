@@ -12,7 +12,7 @@ const getServerUrl = async () => {
   // Check if running in production (Vercel)
   if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
     // Use the Vercel backend URL for production
-    const productionUrl = 'https://virtual-assistant-main-server.vercel.app'
+    const productionUrl = 'https://virtual-assistant-api.vercel.app'
     console.log('✅ Production mode, using:', productionUrl)
     return productionUrl
   }
