@@ -1,7 +1,24 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
+import dotenv from 'dotenv'
 
-// Initialize Gemini AI
+// Load environment variables
+dotenv.config()
+
+// Initialize Gemini AI with API version
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
+
+// Test API key on startup
+const testAPIKey = async () => {
+    try {
+        console.log('🔑 Testing API Key:', process.env.GEMINI_API_KEY?.substring(0, 20) + '...')
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" })
+        await model.generateContent("test")
+        console.log('✅ Gemini API key is valid')
+    } catch (error) {
+        console.error('⚠️ Gemini API key test failed:', error.message)
+    }
+}
+testAPIKey()
 
 // Enhanced system prompt for comprehensive virtual assistant capabilities
 const SYSTEM_PROMPT = `You are an advanced virtual assistant with comprehensive capabilities. Your personality and responses should be:
@@ -53,7 +70,7 @@ Remember: You are not just answering questions - you are a comprehensive digital
 // Get model with system prompt
 export const getAIModel = () => {
     const model = genAI.getGenerativeModel({ 
-        model: "gemini-1.5-flash",
+        model: "gemini-2.5-flash",
         systemInstruction: SYSTEM_PROMPT
     })
     return model
