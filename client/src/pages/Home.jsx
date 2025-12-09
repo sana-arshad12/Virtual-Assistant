@@ -1,6 +1,7 @@
 import React, { useContext, useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { userDataContext } from '../context/UserContext'
+import MessageFormatter from '../components/MessageFormatter'
 
 function Home() {
   const contextValue = useContext(userDataContext);
@@ -251,9 +252,9 @@ function Home() {
                           />
                         </div>
                         <div className='flex-1 min-w-0'>
-                          <p className='text-xs sm:text-sm md:text-base leading-relaxed text-gray-100 break-words'>
-                            {chat.content}
-                          </p>
+                          <div className='text-xs sm:text-sm md:text-base leading-relaxed text-gray-100 break-words'>
+                            <MessageFormatter content={chat.content} />
+                          </div>
                           {chat.action && (
                             <div className='mt-2 sm:mt-3 flex items-center gap-2 flex-wrap'>
                               <span className='inline-flex items-center px-3 py-1.5 bg-transparent text-xs rounded-full backdrop-blur-sm border border-transparent font-medium' style={{display: 'none'}}>
