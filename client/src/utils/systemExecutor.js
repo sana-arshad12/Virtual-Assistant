@@ -1,6 +1,7 @@
 // Automatic System Command Executor - Complete App Opening System
 
-const SYSTEM_API_URL = import.meta.env.VITE_SYSTEM_SERVER_URL || 'http://localhost:8001'
+// Use the same API URL as the main app (system commands are on the same server)
+const SYSTEM_API_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_SYSTEM_SERVER_URL || 'http://localhost:8001'
 
 // Comprehensive list of all supported applications
 export const SUPPORTED_APPS = {
