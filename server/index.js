@@ -15,13 +15,35 @@ dotenv.config();
 const app = express();
 
 // CORS Configuration - MUST be first
+const allowedOrigins = [
+  'https://virtual-assistant-m4wu.vercel.app',
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:3000'
+];
+
 app.use(cors({
-  origin: true, // Allow all origins with credentials
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps, curl, Postman)
+    if (!origin) return callback(null, true);
+    
+    // Allow all Vercel preview deployments
+    if (origin.includes('.vercel.app') || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    
+    // Allow localhost for development
+    if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+      return callback(null, true);
+    }
+    
+    callback(null, false);
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'X-Requested-With', 'Accept'],
   exposedHeaders: ['Set-Cookie'],
-  maxAge: 86400 // 24 hours
+  optionsSuccessStatus: 200
 }));
 
 // Parse JSON and cookies
