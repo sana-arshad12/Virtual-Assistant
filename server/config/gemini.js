@@ -4,18 +4,34 @@ import dotenv from 'dotenv'
 // Load environment variables
 dotenv.config()
 
+// Sanitize API key (remove quotes and trim whitespace)
+const API_KEY = process.env.GEMINI_API_KEY?.trim().replace(/^["']|["']$/g, '')
+
 // Initialize Gemini AI with API version
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
+const genAI = new GoogleGenerativeAI(API_KEY)
 
 // Test API key on startup
 const testAPIKey = async () => {
     try {
-        console.log('🔑 Testing API Key:', process.env.GEMINI_API_KEY?.substring(0, 20) + '...')
+        if (!API_KEY) {
+            console.error('❌ GEMINI_API_KEY not found in environment')
+            return
+        }
+        console.log('🔑 Testing API Key:', API_KEY?.substring(0, 20) + '...')
+        console.log('🔑 API Key length:', API_KEY?.length)
+        
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
-        await model.generateContent("test")
+        const result = await model.generateContent("Say 'Hello' in one word")
+        const response = await result.response
+        const text = response.text()
+        
         console.log('✅ Gemini API key is valid')
+        console.log('✅ Test response:', text)
     } catch (error) {
-        console.error('⚠️ Gemini API key test failed:', error.message)
+        console.error('⚠️ Gemini API key test failed:')
+        console.error('Error message:', error.message)
+        console.error('Error name:', error.name)
+        console.error('Error status:', error.status || 'N/A')
     }
 }
 testAPIKey()
@@ -83,12 +99,15 @@ export const generateAIResponse = async (userMessage, messageType = 'text', chat
         console.log('📝 User message:', userMessage)
         console.log('🎤 Message type:', messageType)
         
-        // Check API key
-        if (!process.env.GEMINI_API_KEY) {
+        // Check API key with detailed logging
+        if (!API_KEY) {
+            console.error('❌ CRITICAL: GEMINI_API_KEY is not set in environment variables')
+            console.error('Available env vars:', Object.keys(process.env).filter(k => k.includes('GEMINI') || k.includes('API')))
             throw new Error('GEMINI_API_KEY is not set in environment variables')
         }
         
-        console.log('🔑 API Key available:', process.env.GEMINI_API_KEY.substring(0, 10) + '...')
+        console.log('🔑 API Key available:', API_KEY.substring(0, 10) + '...')
+        console.log('🔑 API Key length:', API_KEY.length)
         
         const model = getAIModel()
         console.log('🤖 Model initialized successfully')
@@ -120,8 +139,29 @@ export const generateAIResponse = async (userMessage, messageType = 'text', chat
         console.log('📤 Sending prompt to Gemini...')
         console.log('📝 Prompt preview:', prompt.substring(0, 200) + '...')
 
-        // Generate response
-        const result = await model.generateContent(prompt)
+        // Generate response with detailed error handling and timeout
+        let result
+        const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Gemini API timeout after 25 seconds')), 25000)
+        )
+        
+        try {
+            result = await Promise.race([
+                model.generateContent(prompt),
+                timeoutPromise
+            ])
+        } catch (apiError) {
+            console.error('❌ Gemini API Call Failed:')
+            console.error('Error name:', apiError.name)
+            console.error('Error message:', apiError.message)
+            console.error('Error status:', apiError.status || 'N/A')
+            console.error('Error code:', apiError.code || 'N/A')
+            if (apiError.response) {
+                console.error('API Response:', await apiError.response.text())
+            }
+            throw apiError
+        }
+        
         console.log('✅ Gemini API call successful')
         
         const response = await result.response

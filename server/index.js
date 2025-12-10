@@ -69,8 +69,20 @@ app.post("/test-ai", async (req, res) => {
     res.json({ success: true, result });
   } catch (error) {
     console.error('🧪 TEST AI error:', error);
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json({ success: false, error: error.message, stack: error.stack });
   }
+});
+
+// Debug endpoint to check environment
+app.get("/debug-env", (req, res) => {
+  res.json({
+    hasGeminiKey: !!process.env.GEMINI_API_KEY,
+    geminiKeyLength: process.env.GEMINI_API_KEY?.length || 0,
+    geminiKeyPreview: process.env.GEMINI_API_KEY?.substring(0, 15) + '...',
+    isVercel: !!process.env.VERCEL,
+    nodeEnv: process.env.NODE_ENV,
+    envVars: Object.keys(process.env).filter(k => k.includes('GEMINI') || k.includes('MONGO') || k.includes('JWT'))
+  });
 });
 
 // Routes
