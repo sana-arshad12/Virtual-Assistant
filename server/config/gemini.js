@@ -4,21 +4,18 @@ import dotenv from 'dotenv'
 // Load environment variables
 dotenv.config()
 
-// Sanitize API key (remove quotes and trim whitespace)
-const API_KEY = process.env.GEMINI_API_KEY?.trim().replace(/^["']|["']$/g, '')
-
 // Initialize Gemini AI with API version
-const genAI = new GoogleGenerativeAI(API_KEY)
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
 
 // Test API key on startup
 const testAPIKey = async () => {
     try {
-        if (!API_KEY) {
+        if (!process.env.GEMINI_API_KEY) {
             console.error('❌ GEMINI_API_KEY not found in environment')
             return
         }
-        console.log('🔑 Testing API Key:', API_KEY?.substring(0, 20) + '...')
-        console.log('🔑 API Key length:', API_KEY?.length)
+        console.log('🔑 Testing API Key:', process.env.GEMINI_API_KEY?.substring(0, 20) + '...')
+        console.log('🔑 API Key length:', process.env.GEMINI_API_KEY?.length)
         
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
         const result = await model.generateContent("Say 'Hello' in one word")
@@ -100,14 +97,14 @@ export const generateAIResponse = async (userMessage, messageType = 'text', chat
         console.log('🎤 Message type:', messageType)
         
         // Check API key with detailed logging
-        if (!API_KEY) {
+        if (!process.env.GEMINI_API_KEY) {
             console.error('❌ CRITICAL: GEMINI_API_KEY is not set in environment variables')
             console.error('Available env vars:', Object.keys(process.env).filter(k => k.includes('GEMINI') || k.includes('API')))
             throw new Error('GEMINI_API_KEY is not set in environment variables')
         }
         
-        console.log('🔑 API Key available:', API_KEY.substring(0, 10) + '...')
-        console.log('🔑 API Key length:', API_KEY.length)
+        console.log('🔑 API Key available:', process.env.GEMINI_API_KEY.substring(0, 10) + '...')
+        console.log('🔑 API Key length:', process.env.GEMINI_API_KEY.length)
         
         const model = getAIModel()
         console.log('🤖 Model initialized successfully')
